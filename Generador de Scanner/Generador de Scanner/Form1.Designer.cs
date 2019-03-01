@@ -28,9 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.label1 = new System.Windows.Forms.Label();
             this.btnAbrirArchivo = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.LineaActual = new System.Windows.Forms.Label();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // label1
@@ -46,7 +49,7 @@
             // btnAbrirArchivo
             // 
             this.btnAbrirArchivo.Location = new System.Drawing.Point(187, 28);
-            this.btnAbrirArchivo.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAbrirArchivo.Margin = new System.Windows.Forms.Padding(4);
             this.btnAbrirArchivo.Name = "btnAbrirArchivo";
             this.btnAbrirArchivo.Size = new System.Drawing.Size(100, 34);
             this.btnAbrirArchivo.TabIndex = 1;
@@ -58,15 +61,25 @@
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
             // 
+            // LineaActual
+            // 
+            this.LineaActual.AutoSize = true;
+            this.LineaActual.Location = new System.Drawing.Point(137, 80);
+            this.LineaActual.Name = "LineaActual";
+            this.LineaActual.Size = new System.Drawing.Size(48, 19);
+            this.LineaActual.TabIndex = 2;
+            this.LineaActual.Text = "Linea ";
+            // 
             // Principal
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(379, 381);
+            this.Controls.Add(this.LineaActual);
             this.Controls.Add(this.btnAbrirArchivo);
             this.Controls.Add(this.label1);
             this.Font = new System.Drawing.Font("Calibri", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Principal";
             this.Text = "Generador de Scanner";
             this.ResumeLayout(false);
@@ -79,6 +92,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnAbrirArchivo;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.Label LineaActual;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 

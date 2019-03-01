@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
-using System.Collections;
+using System.Timers;
 
 namespace Generador_de_Scanner
 {
@@ -16,6 +16,8 @@ namespace Generador_de_Scanner
     {
         // Variable que guarda la direccion del archivo que se cargará
         string PathArchivo = "";
+        List<string> txt = new List<string>();
+        Procesos procesos = new Procesos();
 
         public Principal()
         {
@@ -38,8 +40,19 @@ namespace Generador_de_Scanner
             StreamReader Lector = new StreamReader(PathArchivo);
             String Linea = Lector.ReadLine();
 
-            
+            while (Linea != null)
+            {
+                txt.Add(Linea);
+                Linea = Lector.ReadLine();
+            }
 
+            int linea = 0;
+
+            List<Sets> Sets = new List<Sets>();
+            procesos.AnalizarArchivo(txt, ref linea, ref Sets);
+
+            MessageBox.Show("Si llegamos hasta acá todo va bien con los sets");
         }
+        
     }
 }
