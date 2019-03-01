@@ -62,6 +62,22 @@ namespace Generador_de_Scanner
             return linea_sin_espacios;
         }
 
+        private string ObtenerCharset(string linea, ref int caracter)
+        {
+            char[] letras = linea.ToCharArray();
+            string chr = "";
+
+            while (letras[caracter] != ')')
+            {
+                chr += Convert.ToString(letras[caracter]);
+                caracter++;
+            }
+
+            caracter++;
+
+            return chr;
+        }
+
         private bool obtenerElementosSets(string linea, int caracter, ref List<string> elementos)
         {
             char[] letras = linea.ToCharArray();
@@ -75,6 +91,9 @@ namespace Generador_de_Scanner
 
             while (analizar)
             {
+                if (letras[caracter] == 'C' && letras[caracter + 1] == 'H' && letras[caracter + 2] == 'R')
+                    break;
+
                 if (letras[caracter] != '\'')
                     actual += Convert.ToString(letras[caracter]);
 
@@ -87,15 +106,29 @@ namespace Generador_de_Scanner
                 }
             }
 
-            try
+            if (letras[caracter] == 'C' && letras[caracter + 1] == 'H' && letras[caracter + 2] == 'R')
             {
-                if (letras[caracter] == '+') { }
-                    // SOLO SE VALIDA SI ESTÁ FUERA DE LA CADENA 
+                caracter = caracter + 4;
+                actual = ObtenerCharset(linea, ref caracter);
+
+                if (letras[caracter] == '.' && letras[caracter + 1] == '.' && letras[caracter + 2] == 'C' &&
+                    letras[caracter + 3] == 'H' && letras[caracter + 4] == 'R')
+                {
+                    caracter = caracter + 6;
+                    finRango = ObtenerCharset(linea, ref caracter);
+
+                    for (int i = Convert.ToInt16(actual); i <= Convert.ToInt16(finRango); i++)
+                    {
+                        elementos.Add(Convert.ToString((char)i));
+                    }
+                }
+                else
+                {
+                    elementos.Add(Convert.ToString(Convert.ToChar(Convert.ToInt16(actual))));
+                }
+                
             }
-            catch
-            {
-                elementos.Add(actual);
-            }
+
 
             try
             {
@@ -129,7 +162,14 @@ namespace Generador_de_Scanner
                         elementos.Add(Convert.ToString((char)i));
                     }
 
-                    obtenerElementosSets(linea, caracter, ref elementos);
+                    // Solo se comprueba que aun ensté dentro del rango
+                    try
+                    {
+                        if (letras[caracter] != '+') { }
+                        obtenerElementosSets(linea, caracter, ref elementos);
+                    }
+                    catch { }
+                    
                 }
                 else
                 {
@@ -137,7 +177,11 @@ namespace Generador_de_Scanner
                 }
 
             }
-            catch { }
+            catch
+            {
+                // SI EL INDICE YA ESTÁ FUERA DE LA CADENA SE ALMACENA EL ULTIMO ELEMENTO GUARDADO
+                elementos.Add(actual);
+            }
 
 
             return true;
@@ -181,13 +225,12 @@ namespace Generador_de_Scanner
 
         public bool AnalizarSets(List<string> txt, ref int linea, ref List<Sets> Sets)
         {
-            int numLinea = linea;
             string set = "";
 
             while (FiltrarEspacio(txt[linea]).ToUpper() != "TOKENS")
             {
                 
-                set = FiltrarEspacioInteligente(txt[numLinea]);
+                set = FiltrarEspacioInteligente(txt[linea]);
                 string[] fragmentos = set.Split('=');
 
                 Sets SetTemp = new Sets();
