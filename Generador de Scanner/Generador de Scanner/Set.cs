@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace Generador_de_Scanner
 {
-    public class Sets
+    public class Set
     {
         private string nombre;
         private List<string> elementos;
 
-        public Sets()
+        public Set()
         {
             nombre = "";
             elementos = new List<string>();

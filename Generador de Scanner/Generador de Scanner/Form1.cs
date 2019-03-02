@@ -16,6 +16,7 @@ namespace Generador_de_Scanner
     {
         // Variable que guarda la direccion del archivo que se cargará
         string PathArchivo = "";
+        string error = "";
         List<string> txt = new List<string>();
         Procesos procesos = new Procesos();
 
@@ -35,7 +36,7 @@ namespace Generador_de_Scanner
                 return;
 
             PathArchivo = openFileDialog1.FileName;
-            MessageBox.Show("El Archivo seleccionado está en " + PathArchivo);
+            //MessageBox.Show("El Archivo seleccionado está en " + PathArchivo);
 
             StreamReader Lector = new StreamReader(PathArchivo);
             String Linea = Lector.ReadLine();
@@ -48,10 +49,12 @@ namespace Generador_de_Scanner
 
             int linea = 0;
 
-            List<Sets> Sets = new List<Sets>();
-            procesos.AnalizarArchivo(txt, ref linea, ref Sets);
+            List<Set> Sets = new List<Set>();
+            if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets) == false)
+                MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
+            
 
-            MessageBox.Show("Si llegamos hasta acá todo va bien con los sets");
+
         }
         
     }
