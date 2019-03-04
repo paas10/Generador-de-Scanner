@@ -108,7 +108,7 @@ namespace Generador_de_Scanner
         /// <returns></returns>
         private bool ObtenerNoToken(string linea, ref int numero, ref string error)
         {
-            char[] letra = FiltrarTabs(linea).ToCharArray();
+            char[] letra = FiltrarTabs(linea.ToUpper()).ToCharArray();
             string num = "";
 
             if (letra[0] == 'T' && letra[1] == 'O' && letra[2] == 'K' && letra[3] == 'E' && letra[4] == 'N' && letra[5] == ' ')
@@ -122,13 +122,13 @@ namespace Generador_de_Scanner
                 }
                 else
                 {
-                    error = "Identificador del token incorrecto";
+                    error = "Identificador del token Inválido";
                     return false;
                 }
             }
             else
             {
-                error = "Titulo incorrecto del token";
+                error = "Titulo Inválido del token";
                 return false;
             }
         }
@@ -145,32 +145,48 @@ namespace Generador_de_Scanner
             while (cont != caracteres.Length)
             {
                 if (caracteres[cont] != ' ')
+                {
                     ER += Convert.ToString(caracteres[cont]);
+                }
                 else
-                    ER += ".";
+                {
+                    if (caracteres[cont + 1] != '|' && caracteres[cont - 1] != '|')
+                        ER += ".";
+                }
 
                 cont++;
             }
 
-            
-            char[] letras = ER.ToCharArray();
-            string expresionRegular = Convert.ToString(letras[0]);
-
-            for (int i = 1; i < caracteres.Length - 2; i++)
+            if (ER.Contains("''"))
             {
-                if (letras[i - 1] != '\'' && letras[i] == '\'' && letras[i + 1] == '\'' && letras[i + 2] != '\'')
+                char[] letras = ER.ToCharArray();
+                string expresionRegular = Convert.ToString(letras[0]);
+
+                try
                 {
-                    expresionRegular += Convert.ToString(letras[i]) + ".";
+                    for (int i = 1; i < caracteres.Length - 2; i++)
+                    {
+                        if (letras[i - 1] != '\'' && letras[i] == '\'' && letras[i + 1] == '\'' && letras[i + 2] != '\'')
+                        {
+                            expresionRegular += Convert.ToString(letras[i]) + ".";
+                        }
+                        else
+                        {
+                            expresionRegular += Convert.ToString(letras[i]);
+                        }
+                    }
                 }
-                else
-                {
-                    expresionRegular += Convert.ToString(letras[i]);
-                }
+                catch { }
+
+
+                expresionRegular += Convert.ToString(letras[letras.Length - 1]);
+
+                return expresionRegular;
             }
-
-            expresionRegular += Convert.ToString(letras[letras.Length -1]);
-
-            return expresionRegular;
+            else
+            {
+                return ER;
+            }
         }
 
 
@@ -323,20 +339,14 @@ namespace Generador_de_Scanner
 
                 if (lenguajes.Count != 0)
                 {
-                    if (EncontrarLenguajes(Sets, lenguajes) == false)
-                    {
-                        error = "no se ha encontrado un elemento de la expresion regular en los sets";
+                    if (EncontrarLenguajes(Sets, lenguajes, ref error) == false)
                         return false;
-                    }
                 }
 
                 if (palabras.Count != 0)
                 {
-                    if (EncontrarPalabras(Sets, palabras) == false)
-                    {
-                        error = "no se ha encontrado una palabra de la expresion regular en los sets";
+                    if (EncontrarPalabras(Sets, palabras, ref error) == false)
                         return false;
-                    }
                 }
 
                 TokenTemp.setElementos(OrdenarExpresionRegular(lineaToken));
@@ -591,7 +601,7 @@ namespace Generador_de_Scanner
 
             while (cont < letras.Length)
             {
-                if (letras[cont] == ' ')
+                while (letras[cont] == ' ')
                 {
                     cont++;
 
@@ -692,7 +702,7 @@ namespace Generador_de_Scanner
                 // Valida el caso en que no venga espacio entre las comillas
                 if (!(letras[cont - 2] != '\'' && letras[cont - 1] == '\'' && letras[cont] == '\'' && letras[cont + 1] != '\''))
                 {
-                    if (letras[cont] == ' ' || letras[cont] == '|' || letras[cont] == ')' || letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                    if (letras[cont] == ' ' || letras[cont] == '|' || letras[cont] == '(' || letras[cont] == ')' || letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
                     {
                         cont++;
 
@@ -721,7 +731,7 @@ namespace Generador_de_Scanner
         }
 
 
-        private bool EncontrarLenguajes(List<Set> Sets, List<string> lenguajes)
+        private bool EncontrarLenguajes(List<Set> Sets, List<string> lenguajes, ref string error)
         {
             foreach (string lenguaje in lenguajes)
             {
@@ -737,13 +747,17 @@ namespace Generador_de_Scanner
                 }
 
                 if (encontrada == false)
+                {
+                    error = "No se ha encontrado \"" + lenguaje + "\" definido en los SETS";
                     return false;
+                }
+                    
             }
 
             return true;
         }
 
-        private bool EncontrarPalabras(List<Set> Sets, List<string> palabras)
+        private bool EncontrarPalabras(List<Set> Sets, List<string> palabras, ref string error)
         {
             foreach (string palabra in palabras)
             {
@@ -762,7 +776,10 @@ namespace Generador_de_Scanner
                 }
 
                 if (encontrada == false)
+                {
+                    error = "No se ha encontrado \"" + palabra + "\" definido en los SETS";
                     return false;
+                }
             }
 
             return true;
