@@ -25,6 +25,7 @@ namespace Generador_de_Scanner
         {
             this.elementos = elementos;
         }
+
         public string getNombre()
         {
             return this.nombre;

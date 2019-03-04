@@ -9,7 +9,21 @@ namespace Generador_de_Scanner
     class Procesos
     {
 
-    // METODOS DE MANIPULACION DE TEXTO
+        // METODOS DE MANIPULACION DE TEXTO
+
+        private string FiltrarTabs(string linea)
+        {
+            char[] letras = linea.ToCharArray();
+            string linea_sin_tabs = "";
+
+            foreach (char letra in linea)
+            {
+                if (letra != '\t')
+                    linea_sin_tabs += Convert.ToString(letra);
+            }
+
+            return linea_sin_tabs;
+        }
 
         /// <summary>
         /// Eliminta todos los espacios y tabs de la linea enviada
@@ -85,6 +99,80 @@ namespace Generador_de_Scanner
             return chr;
         }
 
+        /// <summary>
+        /// Metodo que verifica que la cabecera del token tenga el formato correcto
+        /// </summary>
+        /// <param name="linea">Porcion del texto con el token</param>
+        /// <param name="numero">Numero de token asignado</param>
+        /// <param name="error">Por que es incorrecto en dado falle</param>
+        /// <returns></returns>
+        private bool ObtenerNoToken(string linea, ref int numero, ref string error)
+        {
+            char[] letra = FiltrarTabs(linea).ToCharArray();
+            string num = "";
+
+            if (letra[0] == 'T' && letra[1] == 'O' && letra[2] == 'K' && letra[3] == 'E' && letra[4] == 'N' && letra[5] == ' ')
+            {
+                for (int i = 6; i < letra.Length; i++)
+                    num += letra[i];
+
+                if (int.TryParse(num, out numero) == true)
+                {
+                    return true;
+                }
+                else
+                {
+                    error = "Identificador del token incorrecto";
+                    return false;
+                }
+            }
+            else
+            {
+                error = "Titulo incorrecto del token";
+                return false;
+            }
+        }
+
+        private string OrdenarExpresionRegular(string linea)
+        {
+            char[] caracteres = linea.ToCharArray();
+            int cont = 0;
+            string ER = "";
+
+            while (caracteres[cont] == ' ')
+                cont++;
+
+            while (cont != caracteres.Length)
+            {
+                if (caracteres[cont] != ' ')
+                    ER += Convert.ToString(caracteres[cont]);
+                else
+                    ER += ".";
+
+                cont++;
+            }
+
+            
+            char[] letras = ER.ToCharArray();
+            string expresionRegular = Convert.ToString(letras[0]);
+
+            for (int i = 1; i < caracteres.Length - 2; i++)
+            {
+                if (letras[i - 1] != '\'' && letras[i] == '\'' && letras[i + 1] == '\'' && letras[i + 2] != '\'')
+                {
+                    expresionRegular += Convert.ToString(letras[i]) + ".";
+                }
+                else
+                {
+                    expresionRegular += Convert.ToString(letras[i]);
+                }
+            }
+
+            expresionRegular += Convert.ToString(letras[letras.Length -1]);
+
+            return expresionRegular;
+        }
+
 
 
     // METODOS DE PROCESO PRINCIPAL
@@ -95,7 +183,7 @@ namespace Generador_de_Scanner
         /// <param name="Lista">Lista con el archivo de texto</param>
         /// <param name="linea">Numero de linea analizada. Si el archivo falla la variable contenerá la linea incorrecta</param>
         /// <returns>Si el archivo es correcto retorna true</returns>
-        public bool AnalizarArchivo(List<string> txt, ref string error, ref int linea, ref List<Set> Sets)
+        public bool AnalizarArchivo(List<string> txt, ref string error, ref int linea, ref List<Set> Sets, ref List<Token> Tokens)
         {
             // Analiza si la primera linea es de los SETS
             if (FiltrarEspacio(txt[linea]).ToUpper() == "SETS")
@@ -108,7 +196,8 @@ namespace Generador_de_Scanner
                 if (FiltrarEspacio(txt[linea]).ToUpper() == "TOKENS")
                 {
                     linea++;
-                    // ANALIZAR ACTIONS
+                    if (AnalizarTokens(txt, ref error, ref linea, ref Tokens, Sets) == false)
+                        return false;
                 }
                 else
                 {
@@ -182,13 +271,91 @@ namespace Generador_de_Scanner
             return true;
         }
 
-        
-
-
-        public bool AnalizarTokens(List<string> txt, ref int linea)
+        public bool AnalizarTokens(List<string> txt, ref string error, ref int linea, ref List<Token> Tokens, List<Set> Sets)
         {
-            return false;
+            string token = "";
+
+            // mientras no esté analizando la linea inicial de ations
+            while (FiltrarEspacio(txt[linea]).ToUpper() != "ACTIONS")
+            {
+                token = FiltrarTabs(txt[linea]);
+                string[] fragmentos = token.Split('=');
+
+                string lineaToken = "";
+
+                // Por si no hay ningun "="
+                if (fragmentos.Length == 1)
+                {
+                    error = "Ausencia de signo =";
+                    return false;
+                }
+
+                // Por si habia mas de un "="; Se concatenan todos los demás fragmentos excepto el titulo;  
+                for (int i = 1; i < fragmentos.Length; i++)
+                {
+                    lineaToken += fragmentos[i];
+
+                    if (fragmentos.Length > 2 && i != (fragmentos.Length - 1))
+                        lineaToken += "=";
+                }
+
+                // Creacion de un Token temporal para luego meterlo a la lista de TOKENS
+                Token TokenTemp = new Token();
+
+                int numeroToken = 0;
+
+                if (ObtenerNoToken(fragmentos[0], ref numeroToken, ref error) == false)
+                    return false;
+
+                TokenTemp.setNumeroToken(numeroToken);
+
+                List<string> lenguajes = new List<string>();
+                List<string> palabras = new List<string>();
+
+                if (obtenerElementosER(lineaToken, ref error, ref lenguajes, ref palabras) == false)
+                    return false;
+
+                if (lenguajes.Count == 0 && palabras.Count == 0)
+                {
+                    error = "No se han encontrado elementos del token";
+                    return false;
+                }
+
+                if (lenguajes.Count != 0)
+                {
+                    if (EncontrarLenguajes(Sets, lenguajes) == false)
+                    {
+                        error = "no se ha encontrado un elemento de la expresion regular en los sets";
+                        return false;
+                    }
+                }
+
+                if (palabras.Count != 0)
+                {
+                    if (EncontrarPalabras(Sets, palabras) == false)
+                    {
+                        error = "no se ha encontrado una palabra de la expresion regular en los sets";
+                        return false;
+                    }
+                }
+
+                TokenTemp.setElementos(OrdenarExpresionRegular(lineaToken));
+
+                Tokens.Add(TokenTemp);
+
+                linea++;
+            }
+
+            if (Sets.Count == 0)
+            {
+                error = "No hay ningun TOKEN para ingresar";
+                return false;
+            }
+
+            return true;
         }
+
+
 
         public bool AnalizarActions(List<string> txt, ref int linea)
         {
@@ -408,6 +575,194 @@ namespace Generador_de_Scanner
             {
                 // SI EL INDICE YA ESTÁ FUERA DE LA CADENA SE ALMACENA EL ULTIMO ELEMENTO GUARDADO
                 elementos.Add(actual);
+            }
+
+            return true;
+        }
+
+
+
+        private bool obtenerElementosER(string linea, ref string error, ref List<string> lenguajes, ref List<string> palabras)
+        {
+            int cont = 0;
+            char[] letras = linea.ToCharArray();
+            string palabra = "";
+            string lenguaje = "";
+
+            while (cont < letras.Length)
+            {
+                if (letras[cont] == ' ')
+                {
+                    cont++;
+
+                    if (cont == letras.Length)
+                        break;
+                }
+
+                if (letras[cont] == '(' || letras[cont] == '|')
+                {
+                    cont++;
+
+                    if (cont == letras.Length)
+                        break;
+                }
+
+
+                if (letras[cont] == '\'')
+                {
+                    cont++;
+
+                    try
+                    {
+                        if (letras[cont] == '\'')
+                        {
+                            try
+                            {
+                                if (letras[cont + 1] != '\'')
+                                {
+                                    error = "Elemento vacío";
+                                    return false;
+                                }
+                                else
+                                {
+                                    palabra = Convert.ToString('\'');
+                                    palabras.Add(palabra);
+
+                                    palabra = "";
+                                    cont += 2;
+                                }
+                            }
+                            catch
+                            {
+                                error = "Elemento vacío";
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                // Agrega un elemento hasta que encuentre la comilla simple que cierra
+                                while (letras[cont] != '\'')
+                                {
+                                    palabra += Convert.ToString(letras[cont]);
+                                    cont++;
+                                }
+                                cont++;
+
+                                palabras.Add(palabra);
+                                palabra = "";
+
+                            }
+                            catch
+                            {
+                                error = "Comilla Simple Faltante ( ' )";
+                                return false;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        error = "Comilla simple fuera de contexto";
+                        return false;
+                    }
+                    // hasta acá se guardó un elemento entre comillas
+
+                }
+                else
+                {
+                    // si lo primero que se encuentra no está dentro de comillas se guarda el lenguaje
+
+                    while (letras[cont] != ' ' && letras[cont] != '*' && letras[cont] != '+' && letras[cont] != '?' && letras[cont] != '(' && letras[cont] != '|' && letras[cont] != ')')
+                    {
+                        lenguaje += Convert.ToString(letras[cont]);
+                        cont++;
+
+                        if (cont == letras.Length)
+                            break;
+                    }
+
+                    lenguajes.Add(lenguaje);
+                    lenguaje = ""; 
+                }
+
+                if (cont == letras.Length)
+                    break;
+
+                // Valida el caso en que no venga espacio entre las comillas
+                if (!(letras[cont - 2] != '\'' && letras[cont - 1] == '\'' && letras[cont] == '\'' && letras[cont + 1] != '\''))
+                {
+                    if (letras[cont] == ' ' || letras[cont] == '|' || letras[cont] == ')' || letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                    {
+                        cont++;
+
+                        if (cont == letras.Length)
+                            break;
+
+                        // Valida si viene algun signo adicional
+                        if (letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                        {
+                            cont++;
+
+                            if (cont == letras.Length)
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        error = "Caracter no reconocido ( " + letras[cont] + " )";
+                        return false;
+                    }
+                }
+                
+            }
+
+            return true;
+        }
+
+
+        private bool EncontrarLenguajes(List<Set> Sets, List<string> lenguajes)
+        {
+            foreach (string lenguaje in lenguajes)
+            {
+                bool encontrada = false;
+
+                foreach (Set set in Sets)
+                {
+                    if (set.getNombre() == lenguaje)
+                    {
+                        encontrada = true;
+                        break;
+                    }
+                }
+
+                if (encontrada == false)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool EncontrarPalabras(List<Set> Sets, List<string> palabras)
+        {
+            foreach (string palabra in palabras)
+            {
+                bool encontrada = false;
+
+                foreach (Set set in Sets)
+                {
+                    encontrada = false;
+                    List<string> elementos = set.getElementos();
+
+                    if (elementos.Contains(palabra))
+                    {
+                        encontrada = true;
+                        break;
+                    }
+                }
+
+                if (encontrada == false)
+                    return false;
             }
 
             return true;
