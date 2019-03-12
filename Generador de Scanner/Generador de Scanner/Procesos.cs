@@ -51,27 +51,38 @@ namespace Generador_de_Scanner
         /// <returns> Retorna la linea sin espacios </returns>
         public string FiltrarEspacioInteligente(string linea)
         {
-            char[] letras = linea.ToCharArray();
+            char[] letra = linea.ToCharArray();
             string linea_sin_espacios = "";
             bool abierto = false;
 
-            foreach (char letra in linea)
+            for (int i = 0; i < letra.Length; i++)
             {
-                if (letra == '\'' && abierto == false)
+                if (letra[i] == '\'' && abierto == false)
                     abierto = true;
-                else if (letra == '\'' && abierto == true)
+                else if (letra[i] == '\'' && abierto == true)
                     abierto = false;
+
+                try
+                {
+                    if (letra[i] == '\'' && letra[i + 1] == '\'' && letra[i + 2] == '\'')
+                    {
+                        linea_sin_espacios += Convert.ToString("'''");
+                        i = i + 3;
+                        abierto = false;
+                    }
+                }
+                catch { }
+                
 
                 if (abierto == false)
                 {
-                    if (letra != ' ' && letra != '\t')
-                        linea_sin_espacios += Convert.ToString(letra);
+                    if (letra[i] != ' ' && letra[i] != '\t')
+                        linea_sin_espacios += Convert.ToString(letra[i]);
                 }
                 else
                 {
-                    linea_sin_espacios += Convert.ToString(letra);
+                    linea_sin_espacios += Convert.ToString(letra[i]);
                 }
-                
             }
 
             return linea_sin_espacios;
@@ -133,30 +144,101 @@ namespace Generador_de_Scanner
             }
         }
 
+        private bool ValidarOperador(char[] letras, ref int caracter, ref string error)
+        {
+            if (letras[caracter] == '*' || letras[caracter] == '+' || letras[caracter] == '?')
+            {
+
+                if (caracter + 1 == letras.Length)
+                {
+                    caracter++;
+                    return true;
+                }
+
+                if (letras[caracter + 1] != ' ')
+                {
+                    error = "Operador ( " + letras[caracter] + " ) en lugar invalido";
+                    return false;
+                }
+                
+                try
+                {
+                    if (letras[caracter - 1] == '(' || letras[caracter - 1] == '|')
+                    {
+                        error = "Invalido: no se le puede asignar un operador a: " + letras[caracter - 1];
+                        return false;
+                    }
+                }
+                catch
+                {
+                    error = "Invalido: Operador al inicio de la expresión " + letras[caracter];
+                    return false;
+                }
+
+                try
+                {
+                    if (letras[caracter + 1] == '*' || letras[caracter + 1] == '+' || letras[caracter + 1] == '?')
+                    {
+                        error = "Invalido: Dos operadores juntos ( " + letras[caracter] + " " + letras[caracter + 1] + " )";
+                        return false;
+                    }
+                    else
+                    {
+                        caracter++;
+                        return true;
+                    }
+                }
+                catch
+                {
+                    caracter++;
+                    return true;
+                }
+            }
+
+            return true;
+            //if ((letras[caracter] == ' ' || letras[caracter] == ')' || letras[caracter] == '\'') && (letras[caracter] == ))
+        }
+
+        /// <summary>
+        /// Recibida la expresion regular la normaliza
+        /// </summary>
+        /// <param name="linea"> Expresion Regular </param>
+        /// <returns> Expresion regular Normalizada </returns>
         private string OrdenarExpresionRegular(string linea)
         {
+            string Filtrado = "";
             char[] caracteres = linea.ToCharArray();
             int cont = 0;
             string ER = "";
-
+            
+            // Elimina los espacios que vengan al inicio
             while (caracteres[cont] == ' ')
                 cont++;
 
+            // Agrega los puntos correspondientes
             while (cont != caracteres.Length)
             {
                 if (caracteres[cont] != ' ')
                 {
                     ER += Convert.ToString(caracteres[cont]);
+                    cont++;
                 }
                 else
                 {
-                    if (caracteres[cont + 1] != '|' && caracteres[cont - 1] != '|')
+                    if (caracteres[cont - 1] == '(' || caracteres[cont + 1] == ')' || caracteres[cont + 1] == '|' || caracteres[cont - 1] == '|'
+                        || caracteres[cont + 1] == '*' || caracteres[cont + 1] == '+' || caracteres[cont + 1] == '?')
+                    {
+                        cont++;
+                    }
+                    else
+                    {
                         ER += ".";
+                        cont++;
+                    }
                 }
-
-                cont++;
             }
 
+            // Verifica si hay dos comillas simples juntas y agrega puntos entre ellas
             if (ER.Contains("''"))
             {
                 char[] letras = ER.ToCharArray();
@@ -181,14 +263,122 @@ namespace Generador_de_Scanner
 
                 expresionRegular += Convert.ToString(letras[letras.Length - 1]);
 
-                return expresionRegular;
+                
+                // Elimina todas las comillas simples
+                cont = 0;
+                char[] Expresion = expresionRegular.ToCharArray();
+
+
+                while (cont != Expresion.Length)
+                {
+                    try
+                    {
+                        if (Expresion[cont] != '\'')
+                            Filtrado += Convert.ToString(Expresion[cont]);
+                        else if (Expresion[cont - 1] == '\'' && Expresion[cont] == '\'' && Expresion[cont + 1] == '\'')
+                            Filtrado += Convert.ToString('\'');
+                    }
+                    catch
+                    { }
+
+                    cont++;
+                }
+                
+                return Filtrado;
             }
             else
             {
-                return ER;
+                // Elimina todas las comillas simples
+                cont = 0;
+                char[] Expresion = ER.ToCharArray();
+
+                while (cont != Expresion.Length)
+                {
+                    try
+                    {
+                        if (Expresion[cont] != '\'')
+                            Filtrado += Convert.ToString(Expresion[cont]);
+                        else if (Expresion[cont - 1] == '\'' && Expresion[cont] == '\'' && Expresion[cont + 1] == '\'')
+                            Filtrado += Convert.ToString('\'');
+                    }
+                    catch
+                    { }
+
+                    cont++;
+                }
+
+                return Filtrado;
             }
         }
 
+        // Cont debe de empezar con 1
+        private void ObtenerPosfijo(ref Stack<Node> Posfijo, List<Set> Sets, string ExpresionRegular, ref int cont)
+        {
+            string error = "";
+            char[] letras = ExpresionRegular.ToCharArray();
+            List<string> palabras = new List<string>();
+            int Leaf = 1;
+
+            string palabra = "";
+
+            while (letras.Length != cont)
+            {
+                bool analizar = true;
+
+                Node Operador = new Node();
+
+                while (analizar)
+                {
+                    if (letras[cont] != '.' && letras[cont] != '*' && letras[cont] != '+' && letras[cont] != '?' && letras[cont] != '|' && letras[cont] != ')')
+                    {
+                        palabra += letras[cont];
+                        cont++;
+                    }
+                    else
+                    {
+                        palabras.Add(palabra);
+
+                        // Si encontró la palabra siendo un lenguaje o un token detiene el ciclo
+                        if (EncontrarLenguajes(Sets, palabras, ref error) || EncontrarPalabras(Sets, palabras, ref error))
+                        {
+                            analizar = false;
+                            Node temp = new Node(false, palabras[0], false, Convert.ToString(Leaf), Convert.ToString(Leaf));
+                            Posfijo.Push(temp);
+                            Leaf++;
+                            palabras.RemoveAt(0);
+                        }
+                    }
+                }
+
+                if (letras[cont] == ')')
+                    cont++;
+
+                bool insertar = false;
+
+                if (letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                {
+                    Operador.setOperador(true);
+                    Operador.setContenido(Convert.ToString(letras[cont]));
+                    Posfijo.Push(Operador);
+                }
+                else if (letras[cont] == '.' || letras[cont] == '|')
+                {
+                    Operador.setOperador(true);
+                    Operador.setContenido(Convert.ToString(letras[cont]));
+                    insertar = true; 
+                }
+
+                if (letras[cont] == '(')
+                    cont++;
+
+                ObtenerPosfijo(ref Posfijo, Sets, ExpresionRegular, ref cont);
+
+                if(insertar)
+                    Posfijo.Push(Operador);
+
+                cont++;
+            }
+        }
 
 
     // METODOS DE PROCESO PRINCIPAL
@@ -214,6 +404,20 @@ namespace Generador_de_Scanner
                     linea++;
                     if (AnalizarTokens(txt, ref error, ref linea, ref Tokens, Sets) == false)
                         return false;
+
+                    if (FiltrarEspacio(txt[linea]).ToUpper() == "ACTIONS")
+                    {
+                        linea++;
+                        if (AnalizarActions(txt, ref error, ref linea) == false)
+                            return false;
+
+
+                    }
+                    else
+                    {
+                        error = "No se ha encontrado 'ACTIONS' en el archivo";
+                        return false;
+                    }
                 }
                 else
                 {
@@ -230,11 +434,15 @@ namespace Generador_de_Scanner
             return true;
         }
 
+        public void ObetenerPosfijo()
+        {
+
+        }
 
 
-    // ANALISIS SEGMENTADO
+        // ANALISIS SEGMENTADO
 
-        public bool AnalizarSets(List<string> txt, ref string error, ref int linea, ref List<Set> Sets)
+        private bool AnalizarSets(List<string> txt, ref string error, ref int linea, ref List<Set> Sets)
         {
             string set = "";
 
@@ -271,6 +479,15 @@ namespace Generador_de_Scanner
                 if (obtenerElementosSets(lineaSets, 0, ref error, ref elementos) == false)
                     return false;
 
+                foreach (Set sets in Sets)
+                {
+                    if (sets.getNombre() == SetTemp.getNombre())
+                    {
+                        error = "Set invalido, identificador repetido ( " + SetTemp.getNombre() + " )";
+                        return false;
+                    }
+                }
+
                 SetTemp.setElementos(elementos);
 
                 Sets.Add(SetTemp);
@@ -287,7 +504,7 @@ namespace Generador_de_Scanner
             return true;
         }
 
-        public bool AnalizarTokens(List<string> txt, ref string error, ref int linea, ref List<Token> Tokens, List<Set> Sets)
+        private bool AnalizarTokens(List<string> txt, ref string error, ref int linea, ref List<Token> Tokens, List<Set> Sets)
         {
             string token = "";
 
@@ -349,7 +566,16 @@ namespace Generador_de_Scanner
                         return false;
                 }
 
-                TokenTemp.setElementos(OrdenarExpresionRegular(lineaToken));
+                TokenTemp.setElementos("(" + OrdenarExpresionRegular(lineaToken) + ").#");
+
+                foreach (Token tokens in Tokens)
+                {
+                    if (tokens.getNumeroToken() == TokenTemp.getNumeroToken())
+                    {
+                        error = "Token invalido, identificador repetido ( " + TokenTemp.getNumeroToken() + " )";
+                        return false;
+                    }
+                }
 
                 Tokens.Add(TokenTemp);
 
@@ -365,11 +591,162 @@ namespace Generador_de_Scanner
             return true;
         }
 
-
-
-        public bool AnalizarActions(List<string> txt, ref int linea)
+        private bool AnalizarActions(List<string> txt, ref string error, ref int linea)
         {
-            return false;
+            bool leer = true;
+            string lineaAnalizada = FiltrarEspacio(txt[linea]);
+            char[] caracteres = lineaAnalizada.ToCharArray();
+
+            if (caracteres[0] == 'E' && caracteres[1] == 'R' && caracteres[2] == 'R' && caracteres[3] == 'O' && caracteres[4] == 'R')
+            {
+                leer = false;
+                error = "No se han declarado ACTIONS";
+                return false;
+            }
+
+            // mientras no esté analizando la linea inicial de ations
+            while (leer)
+            {
+                int cont = 0;
+                string action = "";
+
+                // validaciones Nombre del Action
+                try
+                {
+                    while (caracteres[cont] != '(')
+                    {
+                        action += Convert.ToString(caracteres[cont]);
+                        cont++;
+                    }
+                }
+                catch
+                {
+                    // Si se sale del limite del arreglo es porque no tiene parentesis abierto
+                    error = "Caracter Faltante '('";
+                    return false;
+                }
+
+                // Si no está el parentesis cerrando
+                try
+                {
+                    if (caracteres[cont] == '(' && caracteres[cont + 1] != ')')
+                    {
+                        error = "Caracter inválido ( " + caracteres[cont + 1] + " )";
+                        return false;
+                    }
+                }
+                catch
+                {
+                    error = "Caracter faltante ')'";
+                    return false;
+                }
+
+                linea++;
+
+                if (FiltrarEspacio(txt[linea]) != "{")
+                {
+                    error = "Caracter Inválido ( " + FiltrarEspacio(txt[linea]) + " )\n" +
+                        "Se esperaba Abrir Llave ( { )";
+                    return false;
+                }
+                else
+                {
+                    linea++;
+                }
+
+                try
+                {
+                    while (!FiltrarEspacio(txt[linea]).Equals("}"))
+                    {
+                        string linAction = FiltrarEspacio(txt[linea]);
+                        string[] fragmentos = linAction.Split('=');
+
+                        if (fragmentos.Length == 1)
+                        {
+                            error = "Ausencia de '='";
+                            return false;
+                        }
+
+                        int idAction = 0;
+                        if (!int.TryParse(fragmentos[0], out idAction))
+                        {
+                            error = "Identificador no válido";
+                            return false;
+                        }
+
+                        string unionFragmentos = "";
+
+                        if (fragmentos.Length > 2)
+                        {
+                            for (int i = 1; i < fragmentos.Length; i++)
+                            {
+                                unionFragmentos += fragmentos[i];
+
+                                if (i != fragmentos.Length - 1)
+                                    unionFragmentos += "=";
+                            }
+                        }
+                        else
+                            unionFragmentos = fragmentos[1];
+
+                        char[] contenido = unionFragmentos.ToCharArray();
+
+                        if (contenido[0] != '\'' || contenido[contenido.Length - 1] != '\'')
+                        {
+                            error = "Sintaxis incorrecta. Ausencia de Comilla Simple (')";
+                            return false;
+                        }
+
+                        linea++;
+                    }
+                }
+                catch
+                {
+                    // Si nunca sale del ciclo no hay }
+                    error = "Ausencia de Cerrar Llave ( } )";
+                    return false;
+                }
+
+                if (FiltrarEspacio(txt[linea]).Equals("}"))
+                    linea++;
+
+                lineaAnalizada = FiltrarEspacio(txt[linea]);
+                caracteres = lineaAnalizada.ToCharArray();
+
+                if (caracteres[0] == 'E' && caracteres[1] == 'R' && caracteres[2] == 'R' && caracteres[3] == 'O' && caracteres[4] == 'R')
+                    leer = false;
+
+            }
+
+            return true;
+        }
+
+        private bool AnalizarError(List<string> txt, ref string error, ref int linea)
+        {
+            // Error con MAYUSCULAS para el error del archivo de texto
+            string[] Error = FiltrarEspacio(txt[linea]).Split('=');
+
+            if (Error.Length > 2)
+            {
+                error = "Signo no reconocido ( = )";
+                return false;
+            }
+
+            if (Error[0] != "ERROR")
+            {
+                error = "Palabra no reconocida ( " + Error[0] + " )";
+                return false;
+            }
+
+            int numError;
+
+            if (!int.TryParse(Error[1], out numError))
+            {
+                error = "Numero del Error no reconocido ( " + Error[1] + " )";
+                return false;
+            }
+
+            return true;
         }
 
 
@@ -413,6 +790,51 @@ namespace Generador_de_Scanner
             {
                 error = "Caracter inválido ( " + letras[caracter] + " )";
                 return false;
+            }
+
+            // Validacion de Comilla Simple
+            if (letras[caracter] == '\'')
+            {
+                caracter++;
+
+                try
+                {
+                    if (letras[caracter] == '\'')
+                    {
+                        try
+                        {
+                            if (letras[caracter + 1] != '\'')
+                            {
+                                error = "Elemento vacío";
+                                return false;
+                            }
+                            else
+                            {
+                                elementos.Add(Convert.ToString('\''));
+
+                                caracter += 2;
+
+                                if (caracter == letras.Length)
+                                    return true;
+                                else
+                                    caracter++;
+                            }
+                        }
+                        catch
+                        {
+                            error = "Elemento vacío";
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        caracter--;
+                    }
+                }
+                catch
+                {
+                    caracter--;
+                }
             }
 
 
@@ -590,8 +1012,6 @@ namespace Generador_de_Scanner
             return true;
         }
 
-
-
         private bool obtenerElementosER(string linea, ref string error, ref List<string> lenguajes, ref List<string> palabras)
         {
             int cont = 0;
@@ -609,7 +1029,13 @@ namespace Generador_de_Scanner
                         break;
                 }
 
-                if (letras[cont] == '(' || letras[cont] == '|')
+                if (letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                {
+                    error = "Operador ( " + letras[cont] + " ) en lugar invalido";
+                    return false;
+                }
+
+                if (letras[cont] == '(' || letras[cont] == '|' || letras[cont] == ')')
                 {
                     cont++;
 
@@ -617,6 +1043,19 @@ namespace Generador_de_Scanner
                         break;
                 }
 
+                while (letras[cont] == ' ')
+                {
+                    cont++;
+
+                    if (cont == letras.Length)
+                        break;
+                }
+
+                if (ValidarOperador(letras, ref cont, ref error) == false)
+                    return false;
+
+                if (cont == letras.Length)
+                    break;
 
                 if (letras[cont] == '\'')
                 {
@@ -640,6 +1079,12 @@ namespace Generador_de_Scanner
 
                                     palabra = "";
                                     cont += 2;
+
+                                    if (cont == letras.Length)
+                                        break;
+
+                                    if (ValidarOperador(letras, ref cont, ref error) == false)
+                                        return false;
                                 }
                             }
                             catch
@@ -663,6 +1108,11 @@ namespace Generador_de_Scanner
                                 palabras.Add(palabra);
                                 palabra = "";
 
+                                if (cont == letras.Length)
+                                    break;
+
+                                if (ValidarOperador(letras, ref cont, ref error) == false)
+                                    return false;
                             }
                             catch
                             {
@@ -690,10 +1140,17 @@ namespace Generador_de_Scanner
 
                         if (cont == letras.Length)
                             break;
+
                     }
 
                     lenguajes.Add(lenguaje);
-                    lenguaje = ""; 
+                    lenguaje = "";
+
+                    if (cont == letras.Length)
+                        break;
+
+                    if (ValidarOperador(letras, ref cont, ref error) == false)
+                        return false;
                 }
 
                 if (cont == letras.Length)
@@ -702,21 +1159,16 @@ namespace Generador_de_Scanner
                 // Valida el caso en que no venga espacio entre las comillas
                 if (!(letras[cont - 2] != '\'' && letras[cont - 1] == '\'' && letras[cont] == '\'' && letras[cont + 1] != '\''))
                 {
-                    if (letras[cont] == ' ' || letras[cont] == '|' || letras[cont] == '(' || letras[cont] == ')' || letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
+                    if (letras[cont] == ' ' || letras[cont] == '|' || letras[cont] == '(' || letras[cont] == ')')
                     {
                         cont++;
 
                         if (cont == letras.Length)
                             break;
 
-                        // Valida si viene algun signo adicional
-                        if (letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
-                        {
-                            cont++;
+                        if (ValidarOperador(letras, ref cont, ref error) == false)
+                            return false; 
 
-                            if (cont == letras.Length)
-                                break;
-                        }
                     }
                     else
                     {
@@ -724,7 +1176,10 @@ namespace Generador_de_Scanner
                         return false;
                     }
                 }
-                
+
+                if (cont == letras.Length)
+                    break;
+
             }
 
             return true;

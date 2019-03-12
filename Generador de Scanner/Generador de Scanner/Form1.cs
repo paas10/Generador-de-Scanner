@@ -52,6 +52,8 @@ namespace Generador_de_Scanner
             List<Set> Sets = new List<Set>();
             List<Token> Tokens = new List<Token>();
 
+            Lector.Close();
+
             if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets, ref Tokens) == false)
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
             else
