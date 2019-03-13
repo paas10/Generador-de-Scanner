@@ -283,8 +283,26 @@ namespace Generador_de_Scanner
 
                     cont++;
                 }
-                
-                return Filtrado;
+
+                string ExpresionRegular = "";
+                string[] SeparacionOr = Filtrado.Split('|');
+
+                if (SeparacionOr.Length > 1)
+                {
+                    for (int i = 0; i < SeparacionOr.Length; i++)
+                    {
+                        if (i != SeparacionOr.Length - 1)
+                            ExpresionRegular += "(" + SeparacionOr[i] + ")|";
+                        else
+                            ExpresionRegular += "(" + SeparacionOr[i] + ")";
+                    }
+
+                    return ExpresionRegular;
+                }
+                else
+                {
+                    return Filtrado;
+                }
             }
             else
             {
@@ -307,79 +325,159 @@ namespace Generador_de_Scanner
                     cont++;
                 }
 
-                return Filtrado;
+                string ExpresionRegular = ""; 
+                string[] SeparacionOr = Filtrado.Split('|');
+
+                if (SeparacionOr.Length > 1)
+                {
+                    for (int i = 0; i < SeparacionOr.Length; i++)
+                    {
+                        if (i != SeparacionOr.Length - 1)
+                            ExpresionRegular += "(" + SeparacionOr[i] + ")|";
+                        else
+                            ExpresionRegular += "(" + SeparacionOr[i] + ")";
+                    }
+
+                    return ExpresionRegular;
+                }
+                else
+                {
+                    return Filtrado;
+                }
             }
         }
 
         // Cont debe de empezar con 1
-        private void ObtenerPosfijo(ref Stack<Node> Posfijo, List<Set> Sets, string ExpresionRegular, ref int cont)
+        public void ObtenerPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont)
         {
             string error = "";
             char[] letras = ExpresionRegular.ToCharArray();
-            List<string> palabras = new List<string>();
-            int Leaf = 1;
+            int leaf = 1;
 
-            string palabra = "";
+            ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
+
+            if (letras[cont] == ')')
+                cont++;
 
             while (letras.Length != cont)
             {
-                bool analizar = true;
-
                 Node Operador = new Node();
-
-                while (analizar)
-                {
-                    if (letras[cont] != '.' && letras[cont] != '*' && letras[cont] != '+' && letras[cont] != '?' && letras[cont] != '|' && letras[cont] != ')')
-                    {
-                        palabra += letras[cont];
-                        cont++;
-                    }
-                    else
-                    {
-                        palabras.Add(palabra);
-
-                        // Si encontró la palabra siendo un lenguaje o un token detiene el ciclo
-                        if (EncontrarLenguajes(Sets, palabras, ref error) || EncontrarPalabras(Sets, palabras, ref error))
-                        {
-                            analizar = false;
-                            Node temp = new Node(false, palabras[0], false, Convert.ToString(Leaf), Convert.ToString(Leaf));
-                            Posfijo.Push(temp);
-                            Leaf++;
-                            palabras.RemoveAt(0);
-                        }
-                    }
-                }
-
-                if (letras[cont] == ')')
-                    cont++;
-
-                bool insertar = false;
 
                 if (letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?')
                 {
-                    Operador.setOperador(true);
+                    Node C1 = Posfijo.Pop();
+
                     Operador.setContenido(Convert.ToString(letras[cont]));
+
+                    if (letras[cont] == '*' || letras[cont] == '?')
+                        Operador.setNulable(true);
+                    else if (letras[cont] == '+')
+                        Operador.setNulable(C1.getNulable());
+
+                    Operador.setFirst(C1.getFirst());
+                    Operador.setLast(C1.getLast());
+
+                    Operador.setC1(C1);
+                    Operador.setC2(null);
+
                     Posfijo.Push(Operador);
+                    cont++;
                 }
                 else if (letras[cont] == '.' || letras[cont] == '|')
                 {
-                    Operador.setOperador(true);
                     Operador.setContenido(Convert.ToString(letras[cont]));
-                    insertar = true; 
+                    cont++;
+
+                    ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
+
+                    Node C2 = Posfijo.Pop();
+                    Node C1 = Posfijo.Pop();
+
+                    // Nulable
+                    if (C1.getNulable() || C2.getNulable())
+                        Operador.setNulable(true);
+                    else
+                        Operador.setNulable(false);
+
+                    // First Last -- PUNTO
+                    if (Operador.getContenido() == ".")
+                    {
+                        if (C1.getNulable())
+                            Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
+                        else
+                            Operador.setFirst(C1.getFirst());
+
+                        if (C2.getNulable())
+                            Operador.setLast(C1.getLast() + "," + C2.getLast());
+                        else
+                            Operador.setLast(C2.getLast());
+                    }
+                    // First Last -- OR
+                    else if (Operador.getContenido() == "|")
+                    {
+                        Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
+                        Operador.setLast(C1.getLast() + "," + C2.getLast());
+                    }
+
+                    Operador.setC1(C1);
+                    Operador.setC2(C2);
+
+                    Posfijo.Push(Operador);
                 }
 
                 if (letras[cont] == '(')
                     cont++;
 
-                ObtenerPosfijo(ref Posfijo, Sets, ExpresionRegular, ref cont);
-
-                if(insertar)
-                    Posfijo.Push(Operador);
-
-                cont++;
+                //ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ExpresionRegular, ref cont);
+                    
+                //cont++;
             }
         }
 
+        /// <summary>
+        /// Método que encuentra una palabra en la ER y la mete al Stack de Posfijo
+        /// </summary>
+        /// <param name="Posfijo"> Variable por Referencia </param>
+        /// <param name="Leafs"> Lista en donde se encuentran todas las hojas </param>
+        /// <param name="letras"> Cadena con todos los caracteres de la ER </param>
+        /// <param name="cont"> Por que posision me voy desplazando </param>
+        /// <param name="leaf"> Cantidad de Hojas ingresadas </param>
+        /// <param name="Sets"> Sets </param>
+        private void ObtenerPalabraPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, char[] letras, ref int cont, ref int leaf, List<Set> Sets)
+        {
+            String palabra = ""; 
+            string error = "";
+            List<string> palabras = new List<string>();
+            bool analizar = true;
+
+            if (letras[cont] == '(')
+                cont++;
+
+            while (analizar)
+            {
+                if (letras[cont] != '.' && letras[cont] != '*' && letras[cont] != '+' && letras[cont] != '?' && letras[cont] != '|' && letras[cont] != ')')
+                {
+                    palabra += letras[cont];
+                    cont++;
+                }
+                else
+                {
+                    palabras.Add(palabra);
+
+                    // Si encontró la palabra siendo un lenguaje o un token detiene el ciclo
+                    if (EncontrarLenguajes(Sets, palabras, ref error) || EncontrarPalabras(Sets, palabras, ref error))
+                    {
+                        analizar = false;
+                        Node temp = new Node(palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
+
+                        Posfijo.Push(temp);
+                        Leafs.Add(temp);
+                        leaf++;
+                        palabras.RemoveAt(0);
+                    }
+                }
+            }
+        }
 
     // METODOS DE PROCESO PRINCIPAL
 
@@ -433,12 +531,6 @@ namespace Generador_de_Scanner
 
             return true;
         }
-
-        public void ObetenerPosfijo()
-        {
-
-        }
-
 
         // ANALISIS SEGMENTADO
 

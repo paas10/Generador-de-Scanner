@@ -8,39 +8,33 @@ namespace Generador_de_Scanner
 {
     class Node
     {
-        private bool operador;
         private string contenido;
         private bool nulable;
         private string first;
         private string last;
+        private Node C1;
+        private Node C2;
 
         public Node()
         {
-            operador = false;
             contenido = "";
             nulable = false;
             first = "";
             last = "";
+            C1 = null;
+            C2 = null;
         }
 
-        public Node(bool operador, string contenido, bool nulable, string first, string last)
+        public Node(string contenido, bool nulable, string first, string last)
         {
-            this.operador = operador;
             this.contenido = contenido;
             this.nulable = nulable;
             this.first = first;
             this.last = last;
+            C1 = null;
+            C2 = null;
         }
 
-
-        public void setOperador(bool operador)
-        {
-            this.operador = operador; 
-        }
-        public bool getOperador()
-        {
-            return operador;
-        }
 
         public void setContenido (string contenido)
         {
@@ -78,5 +72,22 @@ namespace Generador_de_Scanner
             return last;
         }
 
+        public void setC1(Node C1)
+        {
+            this.C1 = C1;
+        }
+        public Node getC1()
+        {
+            return C1;
+        }
+
+        public void setC2(Node C2)
+        {
+            this.C2 = C2;
+        }
+        public Node getC2()
+        {
+            return C2;
+        }
     }
 }

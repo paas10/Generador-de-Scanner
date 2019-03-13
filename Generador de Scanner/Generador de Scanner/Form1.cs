@@ -56,10 +56,18 @@ namespace Generador_de_Scanner
 
             if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets, ref Tokens) == false)
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
-            else
-                MessageBox.Show("Todo bien");
 
-            
+            foreach (var item in Tokens)
+            {
+                Stack<Node> Posfijo = new Stack<Node>();
+                List<Node> Leafs = new List<Node>();
+                int cont = 1;
+                string ER = item.getElementos();
+
+                procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ER, ref cont);
+            }
+
+            MessageBox.Show("Todo OKKKK");
 
         }
         
