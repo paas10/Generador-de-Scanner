@@ -535,7 +535,7 @@ namespace Generador_de_Scanner
 
                         cont += cont2 - 1;
                     }
-                    else 
+                    else
                     {
                         ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
                     }
@@ -588,7 +588,7 @@ namespace Generador_de_Scanner
                         cont++;
                 }
                 catch { }
-                
+
 
             }
         }
@@ -612,8 +612,8 @@ namespace Generador_de_Scanner
             bool analizar = true;
             bool abierto = false;
 
-            //if (letras[cont -1] == '(')
-            //    abierto = true;
+            if (letras[cont - 1] == '(')
+                abierto = true;
 
             if (letras[cont] == '(')
                 cont++;
@@ -631,12 +631,23 @@ namespace Generador_de_Scanner
                     palabra += letras[cont];
                     cont++;
 
-                    if (letras[cont] == ')')
-                        abierto = false;
+                    abierto = false;
                 }
                 else
                 {
                     palabras.Add(palabra);
+
+                    if (palabra == "#")
+                    {
+                        analizar = false;
+                        Node temp = new Node(palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
+
+                        Posfijo.Push(temp);
+                        Leafs.Add(temp);
+                        leaf++;
+                        palabras.RemoveAt(0);
+                    }
+                    else
 
                     // Si encontró la palabra siendo un lenguaje o un token detiene el ciclo
                     if (EncontrarLenguajes(Sets, palabras, ref error) || EncontrarPalabras(Sets, palabras, ref error))

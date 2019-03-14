@@ -58,12 +58,13 @@ namespace Generador_de_Scanner
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
 
             int leaf = 1;
+            int cont = 1;
             Stack<Node> Posfijo = new Stack<Node>();
             List<Node> Leafs = new List<Node>();
 
             foreach (var item in Tokens)
             {
-                int cont = 1;
+                cont = 1;
                 string ER = item.getElementos();
 
                 procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ER, ref cont, ref leaf);
@@ -82,47 +83,49 @@ namespace Generador_de_Scanner
                     else
                         Operador.setNulable(false);
 
-                    // First Last
-                    if (C1.getNulable())
-                        Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
-                    else
-                        Operador.setFirst(C1.getFirst());
-
-                    if (C2.getNulable())
-                        Operador.setLast(C1.getLast() + "," + C2.getLast());
-                    else
-                        Operador.setLast(C2.getLast());
-
+                    Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
+                    Operador.setLast(C1.getLast() + "," + C2.getLast());
 
                     Operador.setC1(C1);
                     Operador.setC2(C2);
 
                     Posfijo.Push(Operador);
                 }
+
             }
 
-            /*
-             * CODIGO PARA CONCATENAR LA EXPRESION REGULAR
-             * 
-            string ExpresionRegular = "(";
-            int tokens = 0;
+            cont = 1;
+            procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, "(#)", ref cont, ref leaf);
+
+            // Concatenacion del resultante con #
+            Node FOperador = new Node();
+            FOperador.setContenido(Convert.ToString('.'));
+
+            Node FC2 = Posfijo.Pop();
+            Node FC1 = Posfijo.Pop();
+
+            // Nulable
+            if (FC1.getNulable() || FC2.getNulable())
+                FOperador.setNulable(true);
+            else
+                FOperador.setNulable(false);
+
+            // First Last
+            if (FC1.getNulable())
+                FOperador.setFirst(FC1.getFirst() + "," + FC2.getFirst());
+            else
+                FOperador.setFirst(FC1.getFirst());
+
+            if (FC2.getNulable())
+                FOperador.setLast(FC1.getLast() + "," + FC2.getLast());
+            else
+                FOperador.setLast(FC2.getLast());
 
 
-            foreach (var item in Tokens)
-            {
-                if (tokens != Tokens.Count - 1)
-                {
-                    ExpresionRegular += item.getElementos() + ".";
-                    tokens++;
-                }
-                else
-                    ExpresionRegular += item.getElementos();
-            }
+            FOperador.setC1(FC1);
+            FOperador.setC2(FC2);
 
-            ExpresionRegular += ").#";
-            */
-
-
+            Posfijo.Push(FOperador);
 
 
             MessageBox.Show("Todo OKKKK");
