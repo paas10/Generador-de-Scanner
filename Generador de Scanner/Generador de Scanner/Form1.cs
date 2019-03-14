@@ -57,11 +57,17 @@ namespace Generador_de_Scanner
             if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets, ref Tokens) == false)
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
 
+            OperarArchivo(Sets, Tokens);
+        }
+
+        private void OperarArchivo(List<Set> Sets, List<Token> Tokens)
+        {
             int leaf = 1;
             int cont = 1;
             Stack<Node> Posfijo = new Stack<Node>();
             List<Node> Leafs = new List<Node>();
 
+            // Se opera cada token (|)
             foreach (var item in Tokens)
             {
                 cont = 1;
@@ -127,9 +133,86 @@ namespace Generador_de_Scanner
 
             Posfijo.Push(FOperador);
 
+            // -----------------------------------
+
+            Dictionary<int, List<int>> Follows = new Dictionary<int, List<int>>();
+
+            for (int i = 1; i < leaf; i++)
+            {
+                List<int> Follow = new List<int>();
+                Follows.Add(i, Follow);
+            }
+
+            // Busqueda de Follows
+            InOrden(Posfijo.Peek(), ref Follows);
 
             MessageBox.Show("Todo OKKKK");
 
+        }
+
+        private void InOrden(Node nodoAuxiliar, ref Dictionary<int, List<int>> Follows)
+        {
+            if (nodoAuxiliar != null)
+            {
+                InOrden(nodoAuxiliar.getC1(), ref Follows);
+
+                if (nodoAuxiliar.getContenido() == "." && (nodoAuxiliar.getC1() != null && nodoAuxiliar.getC2() != null))
+                {
+                    string[] lasts = nodoAuxiliar.getC1().getLast().Split(',');
+                    string[] first = nodoAuxiliar.getC2().getFirst().Split(',');
+
+                    List<int> Lasts = new List<int>();
+                    List<int> First = new List<int>();
+
+                    foreach (var item in lasts)
+                        Lasts.Add(Convert.ToInt16(item));
+
+                    foreach (var item in first)
+                        First.Add(Convert.ToInt16(item));
+
+                    foreach (var itemLast in Lasts)
+                    {
+                        foreach (var itemFirst in First)
+                        {
+                            if (!Follows[itemLast].Contains(itemFirst))
+                            {
+                                Follows[itemLast].Add(itemFirst);
+                            }
+                        }
+                    }
+
+                }
+                else if ((nodoAuxiliar.getContenido() == "*" || nodoAuxiliar.getContenido() == "+") && (nodoAuxiliar.getC1() != null && nodoAuxiliar.getC2() != null))
+                {
+
+                    string[] lasts = nodoAuxiliar.getC1().getLast().Split(',');
+                    string[] first = nodoAuxiliar.getC1().getFirst().Split(',');
+
+                    List<int> Lasts = new List<int>();
+                    List<int> First = new List<int>();
+
+                    foreach (var item in lasts)
+                        Lasts.Add(Convert.ToInt16(item));
+
+                    foreach (var item in first)
+                        First.Add(Convert.ToInt16(item));
+
+                    foreach (var itemLast in Lasts)
+                    {
+                        foreach (var itemFirst in First)
+                        {
+                            if (!Follows[itemLast].Contains(itemFirst))
+                            {
+                                Follows[itemLast].Add(itemFirst);
+                            }
+                        }
+                    }
+                    
+
+                }
+
+                InOrden(nodoAuxiliar.getC2(), ref Follows);
+            }
         }
     }
 }
