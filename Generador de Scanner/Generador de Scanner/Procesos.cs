@@ -207,6 +207,7 @@ namespace Generador_de_Scanner
         private string OrdenarExpresionRegular(string linea)
         {
             string Filtrado = "";
+            linea = linea.TrimEnd(' ');
             char[] caracteres = linea.ToCharArray();
             int cont = 0;
             string ER = "";
@@ -232,7 +233,9 @@ namespace Generador_de_Scanner
                     }
                     else
                     {
-                        ER += ".";
+                        if (!(caracteres[cont - 1] == ' '))
+                            ER += ".";
+                    
                         cont++;
                     }
                 }
@@ -244,9 +247,10 @@ namespace Generador_de_Scanner
                 char[] letras = ER.ToCharArray();
                 string expresionRegular = Convert.ToString(letras[0]);
 
+
                 try
                 {
-                    for (int i = 1; i < caracteres.Length - 2; i++)
+                    for (int i = 1; i < caracteres.Length - 1; i++)
                     {
                         if (letras[i - 1] != '\'' && letras[i] == '\'' && letras[i + 1] == '\'' && letras[i + 2] != '\'')
                         {
@@ -260,9 +264,7 @@ namespace Generador_de_Scanner
                 }
                 catch { }
 
-
                 expresionRegular += Convert.ToString(letras[letras.Length - 1]);
-
                 
                 // Elimina todas las comillas simples
                 cont = 0;
@@ -328,31 +330,163 @@ namespace Generador_de_Scanner
                 string ExpresionRegular = ""; 
                 string[] SeparacionOr = Filtrado.Split('|');
 
+                // Análisis de como se debe agrupar 
                 if (SeparacionOr.Length > 1)
                 {
                     for (int i = 0; i < SeparacionOr.Length; i++)
                     {
+                        int abierto = 0;
+                        int cerrado = 0;
+                        bool concatenacion = false;
+
+                        char[] fragmentos = SeparacionOr[i].ToCharArray();
+
+                        for (int j = 1; j < fragmentos.Length; j++)
+                        {
+                            if (fragmentos[j] == '(')
+                                abierto++;
+                            else if (fragmentos[j] == ')')
+                                cerrado++;
+                            else if (fragmentos[j] == '.')
+                                concatenacion = true;
+                        }
+
                         if (i != SeparacionOr.Length - 1)
-                            ExpresionRegular += "(" + SeparacionOr[i] + ")|";
+                        {
+                            if (concatenacion)
+                            {
+                                if (abierto == cerrado && abierto != 0)
+                                    ExpresionRegular += "(" + SeparacionOr[i] + ")|";
+                                else
+                                    ExpresionRegular += SeparacionOr[i] + "|";
+                            }
+                            else
+                            {
+                                ExpresionRegular += SeparacionOr[i] + "|";
+                            }
+                        }
                         else
-                            ExpresionRegular += "(" + SeparacionOr[i] + ")";
+                        {
+                            if (concatenacion)
+                            {
+                                ExpresionRegular += "(" + SeparacionOr[i] + ")";
+                            }
+                            else
+                            {
+                                ExpresionRegular += SeparacionOr[i];
+                            }
+                        }
+                            
+                    }
+
+                    return agrupacionOperadores(ExpresionRegular);
+                }
+                else
+                {
+                    return agrupacionOperadores(Filtrado);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Inserta parentesis a la expresion a la cual afecte un operador
+        /// </summary>
+        /// <param name="linea">Token ingresado</param>
+        /// <returns>Token Normalizado</returns>
+        public string agrupacionOperadores(string linea)
+        {
+            char[] caracteres = linea.ToCharArray();
+            string ExpresionRegular = "";
+            List<int> index = new List<int>();
+            List<int> endex = new List<int>();
+            bool parentesis = false;
+            int abre = 0;
+            int cierra = 0;
+
+            if (linea.Contains('*') || linea.Contains('+') || linea.Contains('?'))
+            {
+                for (int i = 0; i < caracteres.Length; i++)
+                {
+                    if (caracteres[i] == '*' || caracteres[i] == '+' || caracteres[i] == '?')
+                    {
+                        index.Add(i);
+
+                        // Se debe detener cuando encuentre el parentesis de apertura
+                        try
+                        {
+                            if (caracteres[i - 1] == ')')
+                                parentesis = true;
+
+                            // Encuentra el indice donde hay que abrir parentesis
+                            for (int j = index[index.Count - 1]; j >= 0; j--)
+                            {
+                                if (parentesis)
+                                {
+                                    if (caracteres[j] == ')')
+                                        cierra++;
+                                    else if (caracteres[j] == '(')
+                                        abre++;
+
+                                    if (caracteres[j] == '(' && cierra == abre)
+                                        endex.Add(j);
+                                }
+                                else
+                                {
+                                    if (caracteres[j] == '.' || caracteres[j] == '|')
+                                    {
+                                        endex.Add(j);
+                                        break;
+                                    }
+                                }
+
+                            }
+                        }
+                        catch
+                        { }
+
+                    }
+                }
+
+                if (index.Count != 0 && endex.Count != 0)
+                {
+                    for (int i = 0; i < linea.Length; i++)
+                    {
+                        ExpresionRegular += caracteres[i];
+
+                        if (endex.Contains(i))
+                            ExpresionRegular += "(";
+
+                        if (index.Contains(i))
+                            ExpresionRegular += ")";
                     }
 
                     return ExpresionRegular;
                 }
                 else
                 {
-                    return Filtrado;
+                    return linea;
                 }
+                
             }
+            else
+            {
+                return linea;
+            }
+
         }
 
-        // Cont debe de empezar con 1
-        public void ObtenerPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont)
+        /// <summary>
+        /// Método que opera Posfijo cada Token enviado
+        /// </summary>
+        /// <param name="Posfijo">Stack de elementos</param>
+        /// <param name="Leafs">Lista donde se insertan las hojas</param>
+        /// <param name="Sets">Lista con los Sets Existentes</param>
+        /// <param name="ExpresionRegular">Token enviado</param>
+        /// <param name="cont">Caracter que se está leyendo</param>
+        public void ObtenerPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont, ref int leaf)
         {
             string error = "";
             char[] letras = ExpresionRegular.ToCharArray();
-            int leaf = 1;
 
             ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
 
@@ -388,20 +522,37 @@ namespace Generador_de_Scanner
                     Operador.setContenido(Convert.ToString(letras[cont]));
                     cont++;
 
-                    ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
+                    if (letras[cont] == '(')
+                    {
+                        string segmento = "";
+
+                        for (int i = cont; i < letras.Length; i++)
+                            segmento += Convert.ToString(letras[i]);
+
+                        int cont2 = 1;
+
+                        ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, segmento, ref cont2, ref leaf);
+
+                        cont += cont2 - 1;
+                    }
+                    else 
+                    {
+                        ObtenerPalabraPosfijo(ref Posfijo, ref Leafs, letras, ref cont, ref leaf, Sets);
+                    }
 
                     Node C2 = Posfijo.Pop();
                     Node C1 = Posfijo.Pop();
 
-                    // Nulable
-                    if (C1.getNulable() || C2.getNulable())
-                        Operador.setNulable(true);
-                    else
-                        Operador.setNulable(false);
-
                     // First Last -- PUNTO
                     if (Operador.getContenido() == ".")
                     {
+                        // Nulable
+                        if (C1.getNulable() && C2.getNulable())
+                            Operador.setNulable(true);
+                        else
+                            Operador.setNulable(false);
+
+
                         if (C1.getNulable())
                             Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
                         else
@@ -415,6 +566,12 @@ namespace Generador_de_Scanner
                     // First Last -- OR
                     else if (Operador.getContenido() == "|")
                     {
+                        // Nulable
+                        if (C1.getNulable() || C2.getNulable())
+                            Operador.setNulable(true);
+                        else
+                            Operador.setNulable(false);
+
                         Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
                         Operador.setLast(C1.getLast() + "," + C2.getLast());
                     }
@@ -425,14 +582,18 @@ namespace Generador_de_Scanner
                     Posfijo.Push(Operador);
                 }
 
-                if (letras[cont] == '(')
-                    cont++;
+                try
+                {
+                    while (letras[cont] == ')')
+                        cont++;
+                }
+                catch { }
+                
 
-                //ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ExpresionRegular, ref cont);
-                    
-                //cont++;
             }
         }
+
+
 
         /// <summary>
         /// Método que encuentra una palabra en la ER y la mete al Stack de Posfijo
@@ -449,16 +610,29 @@ namespace Generador_de_Scanner
             string error = "";
             List<string> palabras = new List<string>();
             bool analizar = true;
+            bool abierto = false;
+
+            //if (letras[cont -1] == '(')
+            //    abierto = true;
 
             if (letras[cont] == '(')
                 cont++;
 
             while (analizar)
             {
+                if ((letras[cont] == '*' || letras[cont] == '+' || letras[cont] == '?') && abierto == true)
+                {
+                    palabra += letras[cont];
+                    cont++;
+                }
+
                 if (letras[cont] != '.' && letras[cont] != '*' && letras[cont] != '+' && letras[cont] != '?' && letras[cont] != '|' && letras[cont] != ')')
                 {
                     palabra += letras[cont];
                     cont++;
+
+                    if (letras[cont] == ')')
+                        abierto = false;
                 }
                 else
                 {
@@ -489,6 +663,9 @@ namespace Generador_de_Scanner
         /// <returns>Si el archivo es correcto retorna true</returns>
         public bool AnalizarArchivo(List<string> txt, ref string error, ref int linea, ref List<Set> Sets, ref List<Token> Tokens)
         {
+            while (FiltrarEspacio(txt[linea]) == "")
+                linea++;
+
             // Analiza si la primera linea es de los SETS
             if (FiltrarEspacio(txt[linea]).ToUpper() == "SETS")
             {
@@ -500,6 +677,7 @@ namespace Generador_de_Scanner
                 if (FiltrarEspacio(txt[linea]).ToUpper() == "TOKENS")
                 {
                     linea++;
+                    
                     if (AnalizarTokens(txt, ref error, ref linea, ref Tokens, Sets) == false)
                         return false;
 
@@ -508,8 +686,6 @@ namespace Generador_de_Scanner
                         linea++;
                         if (AnalizarActions(txt, ref error, ref linea) == false)
                             return false;
-
-
                     }
                     else
                     {
@@ -541,6 +717,12 @@ namespace Generador_de_Scanner
             // mientras no esté analizando la linea inicial de tokens
             while (FiltrarEspacio(txt[linea]).ToUpper() != "TOKENS")
             {
+                while (FiltrarEspacio(txt[linea]) == "")
+                    linea++;
+
+                if (FiltrarEspacio(txt[linea]).ToUpper() == "TOKENS")
+                    break;
+
                 set = FiltrarEspacioInteligente(txt[linea]);
                 string[] fragmentos = set.Split('=');
 
@@ -603,6 +785,12 @@ namespace Generador_de_Scanner
             // mientras no esté analizando la linea inicial de ations
             while (FiltrarEspacio(txt[linea]).ToUpper() != "ACTIONS")
             {
+                while (FiltrarEspacio(txt[linea]) == "")
+                    linea++;
+
+                if (FiltrarEspacio(txt[linea]).ToUpper() == "ACTIONS")
+                    break; 
+
                 token = FiltrarTabs(txt[linea]);
                 string[] fragmentos = token.Split('=');
 
@@ -658,9 +846,32 @@ namespace Generador_de_Scanner
                         return false;
                 }
 
-                TokenTemp.setElementos("(" + OrdenarExpresionRegular(lineaToken) + ").#");
+                bool AgragarParentesis = false;
+                char[] caracteres = OrdenarExpresionRegular(lineaToken).ToCharArray();
 
-                foreach (Token tokens in Tokens)
+                if (caracteres[0] == '(' && caracteres[caracteres.Length - 1] == ')')
+                {
+                    for (int i = 1; i < caracteres.Length - 1; i++)
+                    {
+                        if (caracteres[i] == ')')
+                        {
+                            AgragarParentesis = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    AgragarParentesis = true;
+                }
+                
+
+                if (AgragarParentesis)
+                    TokenTemp.setElementos("(" + OrdenarExpresionRegular(lineaToken) + ")");
+                else
+                    TokenTemp.setElementos(OrdenarExpresionRegular(lineaToken));
+
+                foreach (var tokens in Tokens)
                 {
                     if (tokens.getNumeroToken() == TokenTemp.getNumeroToken())
                     {
@@ -699,6 +910,15 @@ namespace Generador_de_Scanner
             // mientras no esté analizando la linea inicial de ations
             while (leer)
             {
+                while (FiltrarEspacio(txt[linea]) == "")
+                    linea++;
+
+                lineaAnalizada = FiltrarEspacio(txt[linea]);
+                caracteres = lineaAnalizada.ToCharArray();
+
+                if (caracteres[0] == 'E' && caracteres[1] == 'R' && caracteres[2] == 'R' && caracteres[3] == 'O' && caracteres[4] == 'R')
+                    break;
+
                 int cont = 0;
                 string action = "";
 
@@ -802,6 +1022,9 @@ namespace Generador_de_Scanner
                 if (FiltrarEspacio(txt[linea]).Equals("}"))
                     linea++;
 
+                while (FiltrarEspacio(txt[linea]) == "")
+                    linea++;
+
                 lineaAnalizada = FiltrarEspacio(txt[linea]);
                 caracteres = lineaAnalizada.ToCharArray();
 
@@ -846,6 +1069,7 @@ namespace Generador_de_Scanner
 
         private bool obtenerElementosSets(string linea, int caracter, ref string error, ref List<string> elementos)
         {
+            linea = linea.TrimEnd(' ');
             char[] letras = linea.ToCharArray();
             string actual = "";
             string finRango = "";
@@ -1107,6 +1331,7 @@ namespace Generador_de_Scanner
         private bool obtenerElementosER(string linea, ref string error, ref List<string> lenguajes, ref List<string> palabras)
         {
             int cont = 0;
+            linea = linea.TrimEnd(' ');
             char[] letras = linea.ToCharArray();
             string palabra = "";
             string lenguaje = "";

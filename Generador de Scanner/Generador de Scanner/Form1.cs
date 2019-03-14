@@ -57,19 +57,76 @@ namespace Generador_de_Scanner
             if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets, ref Tokens) == false)
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
 
+            int leaf = 1;
+            Stack<Node> Posfijo = new Stack<Node>();
+            List<Node> Leafs = new List<Node>();
+
             foreach (var item in Tokens)
             {
-                Stack<Node> Posfijo = new Stack<Node>();
-                List<Node> Leafs = new List<Node>();
                 int cont = 1;
                 string ER = item.getElementos();
 
-                procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ER, ref cont);
+                procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ER, ref cont, ref leaf);
+
+                if (Posfijo.Count == 2)
+                {
+                    Node Operador = new Node();
+                    Operador.setContenido(Convert.ToString('.'));
+
+                    Node C2 = Posfijo.Pop();
+                    Node C1 = Posfijo.Pop();
+
+                    // Nulable
+                    if (C1.getNulable() || C2.getNulable())
+                        Operador.setNulable(true);
+                    else
+                        Operador.setNulable(false);
+
+                    // First Last
+                    if (C1.getNulable())
+                        Operador.setFirst(C1.getFirst() + "," + C2.getFirst());
+                    else
+                        Operador.setFirst(C1.getFirst());
+
+                    if (C2.getNulable())
+                        Operador.setLast(C1.getLast() + "," + C2.getLast());
+                    else
+                        Operador.setLast(C2.getLast());
+
+
+                    Operador.setC1(C1);
+                    Operador.setC2(C2);
+
+                    Posfijo.Push(Operador);
+                }
             }
+
+            /*
+             * CODIGO PARA CONCATENAR LA EXPRESION REGULAR
+             * 
+            string ExpresionRegular = "(";
+            int tokens = 0;
+
+
+            foreach (var item in Tokens)
+            {
+                if (tokens != Tokens.Count - 1)
+                {
+                    ExpresionRegular += item.getElementos() + ".";
+                    tokens++;
+                }
+                else
+                    ExpresionRegular += item.getElementos();
+            }
+
+            ExpresionRegular += ").#";
+            */
+
+
+
 
             MessageBox.Show("Todo OKKKK");
 
         }
-        
     }
 }
