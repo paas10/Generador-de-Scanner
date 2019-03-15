@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -1392,7 +1393,7 @@ namespace Generador_de_Scanner
         /// <param name="Sets">Lista con los Sets Existentes</param>
         /// <param name="ExpresionRegular">Token enviado</param>
         /// <param name="cont">Caracter que se está leyendo</param>
-        public void ObtenerPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont, ref int leaf)
+        public void ObtenerPosfijo(ref List<string> mensajes, ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont, ref int leaf)
         {
             string error = "";
             char[] letras = ExpresionRegular.ToCharArray();
@@ -1425,6 +1426,9 @@ namespace Generador_de_Scanner
 
                     Posfijo.Push(Operador);
                     cont++;
+
+                    mensajes.Add(Operador.getC1().getContenido() + " " + Operador.getContenido() + Operador.getC1().getContenido() +
+                        "                                               First ->" + Operador.getFirst() + "        Last ->" + Operador.getLast());
                 }
                 else if (letras[cont] == '.' || letras[cont] == '|')
                 {
@@ -1440,7 +1444,7 @@ namespace Generador_de_Scanner
 
                         int cont2 = 1;
 
-                        ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, segmento, ref cont2, ref leaf);
+                        ObtenerPosfijo(ref mensajes, ref Posfijo, ref Leafs, Sets, segmento, ref cont2, ref leaf);
 
                         cont += cont2 - 1;
                     }
@@ -1489,6 +1493,9 @@ namespace Generador_de_Scanner
                     Operador.setC2(C2);
 
                     Posfijo.Push(Operador);
+
+                    mensajes.Add(Operador.getC1().getContenido() + " " + Operador.getContenido() + Operador.getC1().getContenido() +
+                        "                                               First ->" + Operador.getFirst() + "        Last ->" + Operador.getLast());
                 }
 
                 try
@@ -1571,279 +1578,5 @@ namespace Generador_de_Scanner
             }
         }
 
-
-        // DESARROLLO TABLA DE TRANSCICIONES
-
-        /// <summary>
-        /// Metodo que construye la matriz de la tabla de trancisiones
-        /// </summary>
-        /// <param name="FirstPadre">Rl First con el que se comienza a calcular la tabla</param>
-        /// <param name="Encabezado">Columnas de la tabla</param>
-        /// <param name="Follows">Follows para hacer los calculos respectivos</param>
-        /// <returns>La matriz de la tabla de transiciones</returns>
-        public Transicion[,] TablaTransiciones(List<string> FirstPadre, List<Node> Leafs, Dictionary<int, List<int>> Follows)
-        {
-            Columna[] Encabezado = ConstruirColumnas(Leafs);
-            int filas = CantFilas(FirstPadre, Encabezado, Follows);
-            
-            Transicion[,] TablaDeTransiciones = new Transicion[filas, Encabezado.Length + 1];
-
-            int caracter = 65;
-            char letra = Convert.ToChar(caracter);
-
-            // Registra todas los estados en la tabla de tranciciones
-            List<Transicion> Transiciones = new List<Transicion>();
-            // Registra los estados pendientes por analizar en la tabla de trancisiones
-            Queue<Transicion> Pendientes = new Queue<Transicion>();
-
-            // Inicializacion de la matriz
-            for (int i = 0; i < filas; i++)
-            {
-                for (int j = 0; j < (Encabezado.Length + 1); j++)
-                {
-                    TablaDeTransiciones[i, j] = new Transicion();
-                }
-            }
-
-            TablaDeTransiciones[0, 0].setElementos(FirstPadre);
-            TablaDeTransiciones[0, 0].setIdentificador(Convert.ToString(letra));
-
-            // Punto inicial de la tabla de transiciones
-            Transicion temp = new Transicion(Convert.ToString(letra), FirstPadre);
-            Transiciones.Add(temp);
-            letra++;
-
-            int fila = 0;
-
-            do
-            {
-                // Por cada Columna (Hoja)
-                foreach (var Columna in Encabezado)
-                {
-                    // Se obteienen los elementos del first acutal
-                    foreach (var Elemento in temp.getElementos())
-                    {
-                        if (Columna.getHojas().Contains(Convert.ToInt16(Elemento)))
-                        {
-                            List<int> ElementosFollow = Follows[Convert.ToInt16(Elemento)];
-
-                            // Convierte los elementos del follow de int a string
-                            List<string> Elementos = new List<string>();
-                            foreach (var item in ElementosFollow)
-                                Elementos.Add(Convert.ToString(item));
-
-                            int posicion = Columna.getNumColumna();
-                            TablaDeTransiciones[fila, posicion].setElementos(Elementos);
-
-                            bool añadir = true;
-                            foreach (var item in Transiciones)
-                            {
-                                if (TablaDeTransiciones[fila, Columna.getNumColumna()].getElementos() == item.getElementos())
-                                    añadir = false;
-                            }
-
-                            if (añadir)
-                            {
-                                bool letraExistente = false;
-                                string letraAnterior = "";
-
-                                foreach (var item in Transiciones)
-                                {
-                                    // Se convierten en strings para comarar si son el mismo emento en la tabla
-                                    string cadena1 = "";
-                                    string cadena2 = "";
-
-                                    foreach (var elemento in item.getElementos())
-                                        cadena1 += elemento;
-
-                                    foreach (var elemento in Elementos)
-                                        cadena2 += elemento;
-
-                                    if (cadena1.Equals(cadena2))
-                                    {
-                                        letraExistente = true;
-                                        letraAnterior = item.getIdentificador();
-                                        break;
-                                    }
-                                }
-
-                                if (letraExistente)
-                                {
-                                    TablaDeTransiciones[fila, Columna.getNumColumna()].setIdentificador(letraAnterior);
-                                }
-                                else
-                                {
-                                    TablaDeTransiciones[fila, Columna.getNumColumna()].setIdentificador(Convert.ToString(letra));
-                                    letra++;
-                                    Transiciones.Add(TablaDeTransiciones[fila, Columna.getNumColumna()]);
-                                    Pendientes.Enqueue(TablaDeTransiciones[fila, Columna.getNumColumna()]);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                fila++;
-                temp = Pendientes.Dequeue();
-                FirstPadre = temp.getElementos();
-                string identificador = temp.getIdentificador();
-
-            } while (Pendientes.Count != 0);
-
-
-            return TablaDeTransiciones;
-        }
-
-        /// <summary>
-        /// Metodo que obtiene el encabezado de mi tabla de transiciones
-        /// </summary>
-        /// <param name="Leafs">Lista de nodos en donde estan todas las hojas</param>
-        /// <returns>Cadena de encabezados</returns>
-        private Columna[] ConstruirColumnas(List<Node> Leafs)
-        {
-            List<string> nombres = new List<string>();
-            foreach (var item in Leafs)
-            {
-                if (!nombres.Contains(item.getContenido()) && item.getContenido() != "#")
-                    nombres.Add(item.getContenido());
-            }
-
-            Columna[] Encabezado = new Columna[nombres.Count];
-
-            for (int i = 0; i < Encabezado.Length; i++)
-            {
-                Encabezado[i] = new Columna();
-                Encabezado[i].setNombre(nombres[i]);
-                Encabezado[i].setNumColumna(i + 1);
-                List<int> hojas = new List<int>();
-
-                foreach (var item in Leafs)
-                {
-                    if (item.getContenido() == Encabezado[i].getNombre())
-                        hojas.Add(Convert.ToInt16(item.getFirst()));
-                }
-
-                Encabezado[i].setHojas(hojas);
-            }
-
-            return Encabezado;
-        }
-
-        /// <summary>
-        /// Metodo que encuentra la cantidad de lineas de la matriz (coordenada i)
-        /// </summary>
-        /// <param name="FirstPadre">Rl First con el que se comienza a calcular la tabla</param>
-        /// <param name="Encabezado">Columnas de la tabla</param>
-        /// <param name="Follows">Follows para hacer los calculos respectivos</param>
-        /// <returns>Cantidad de lineas de la matriz</returns>
-        private int CantFilas(List<string> FirstPadre, Columna[] Encabezado, Dictionary<int, List<int>> Follows)
-        {
-            int cant = 1;
-            int caracter = 65; 
-            char letra = Convert.ToChar(caracter);
-
-            List<Transicion> Transiciones = new List<Transicion>();
-            Queue<Transicion> Pendientes = new Queue<Transicion>();
-
-            Transicion[] Linea = new Transicion[Encabezado.Length + 1];
-
-            // Inicializacion de la lista
-            for (int i = 0; i < Linea.Length; i++)
-                Linea[i] = new Transicion();
-
-            Linea[0].setElementos(FirstPadre);
-            Linea[0].setIdentificador(Convert.ToString(letra));
-
-            // Punto inicial de la tabla de transiciones
-            Transicion temp = new Transicion(Convert.ToString(letra), FirstPadre);
-            Transiciones.Add(temp);
-            letra++;
-
-            do
-            {
-                // Por cada Columna (Hoja)
-                foreach (var Columna in Encabezado)
-                {
-                    // Se obteienen los elementos del first acutal
-                    foreach (var Elemento in temp.getElementos())
-                    {
-                        if (Columna.getHojas().Contains(Convert.ToInt16(Elemento)))
-                        {
-                            List<int> ElementosFollow = Follows[Convert.ToInt16(Elemento)];
-
-                            // Convierte los elementos del follow de int a string
-                            List<string> Elementos = new List<string>();
-                            foreach (var item in ElementosFollow)
-                                Elementos.Add(Convert.ToString(item));
-
-                            int posicion = Columna.getNumColumna();
-                            Linea[posicion].setElementos(Elementos);
-
-                            bool añadir = true;
-                            foreach (var item in Transiciones)
-                            {
-                                if (Linea[Columna.getNumColumna()].getElementos() == item.getElementos())
-                                    añadir = false;
-                            }
-
-                            if (añadir)
-                            {
-                                bool letraExistente = false;
-                                string letraAnterior = "";
-
-                                foreach (var item in Transiciones)
-                                {
-                                    // Se convierten en strings para comarar si son el mismo emento en la tabla
-                                    string cadena1 = "";
-                                    string cadena2 = "";
-
-                                    foreach (var elemento in item.getElementos())
-                                        cadena1 += elemento;
-
-                                    foreach (var elemento in Elementos)
-                                        cadena2 += elemento; 
-
-                                    if (cadena1.Equals(cadena2))
-                                    {
-                                        letraExistente = true;
-                                        letraAnterior = item.getIdentificador();
-                                        break; 
-                                    }
-                                }
-
-                                if (letraExistente)
-                                {
-                                    Linea[Columna.getNumColumna()].setIdentificador(letraAnterior);
-                                }
-                                else
-                                {
-                                    Linea[Columna.getNumColumna()].setIdentificador(Convert.ToString(letra));
-                                    letra++;
-                                    Transiciones.Add(Linea[Columna.getNumColumna()]);
-                                    Pendientes.Enqueue(Linea[Columna.getNumColumna()]);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                cant++;
-                temp = Pendientes.Dequeue();
-                FirstPadre = temp.getElementos();
-                string identificador = temp.getIdentificador();
-
-                Linea = new Transicion[Encabezado.Length + 1];
-
-                // Inicializacion de la lista
-                for (int i = 0; i < Linea.Length; i++)
-                    Linea[i] = new Transicion();
-
-                Linea[0].setElementos(FirstPadre);
-                Linea[0].setIdentificador(identificador);
-
-            } while (Pendientes.Count != 0);
-
-            return cant;
-        }
     }
 }

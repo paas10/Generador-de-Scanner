@@ -53,5 +53,28 @@ namespace Generador_de_Scanner
         {
             return elementos;
         }
+        public string getElementosCadena()
+        {
+            if (elementos != null)
+            {
+                string cadena = "(";
+
+                for (int i = 0; i < elementos.Count; i++)
+                {
+                    if (i != (elementos.Count - 1))
+                        cadena += elementos[i] + ",";
+                    else
+                        cadena += elementos[i];
+                }
+
+                cadena += ")";
+
+                return cadena;
+            }
+            else
+            {
+                return "";
+            }
+        }
     }
 }
