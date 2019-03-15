@@ -78,7 +78,7 @@ namespace Generador_de_Scanner
                 if (Posfijo.Count == 2)
                 {
                     Node Operador = new Node();
-                    Operador.setContenido(Convert.ToString('.'));
+                    Operador.setContenido(Convert.ToString('|'));
 
                     Node C2 = Posfijo.Pop();
                     Node C1 = Posfijo.Pop();
@@ -131,6 +131,7 @@ namespace Generador_de_Scanner
             FOperador.setC1(FC1);
             FOperador.setC2(FC2);
 
+            // Operador Final
             Posfijo.Push(FOperador);
 
             // -----------------------------------
@@ -146,17 +147,35 @@ namespace Generador_de_Scanner
             // Busqueda de Follows
             InOrden(Posfijo.Peek(), ref Follows);
 
+            // Se transforma el first en una lista
+            List<string> FirstPadre = new List<string>();
+            string[] FPadre = FOperador.getFirst().Split(',');
+
+            foreach (var item in FPadre)
+            {
+                FirstPadre.Add(item);
+            }
+
+
+            Transicion[,] TablaDeTransiciones = procesos.TablaTransiciones(FirstPadre, Leafs, Follows);
+
             MessageBox.Show("Todo OKKKK");
 
         }
 
+        /// <summary>
+        /// Metodo que recorre el Arbol en InOrden y Analiza los Follows
+        /// </summary>
+        /// <param name="nodoAuxiliar">Nodo Auxiliar</param>
+        /// <param name="Follows"> Diccionario con los follows </param>
         private void InOrden(Node nodoAuxiliar, ref Dictionary<int, List<int>> Follows)
         {
             if (nodoAuxiliar != null)
             {
                 InOrden(nodoAuxiliar.getC1(), ref Follows);
 
-                if (nodoAuxiliar.getContenido() == "." && (nodoAuxiliar.getC1() != null && nodoAuxiliar.getC2() != null))
+                string contNodo = nodoAuxiliar.getContenido();
+                if (contNodo == "." && (nodoAuxiliar.getC1() != null && nodoAuxiliar.getC2() != null))
                 {
                     string[] lasts = nodoAuxiliar.getC1().getLast().Split(',');
                     string[] first = nodoAuxiliar.getC2().getFirst().Split(',');
@@ -182,9 +201,8 @@ namespace Generador_de_Scanner
                     }
 
                 }
-                else if ((nodoAuxiliar.getContenido() == "*" || nodoAuxiliar.getContenido() == "+") && (nodoAuxiliar.getC1() != null && nodoAuxiliar.getC2() != null))
+                else if ((nodoAuxiliar.getContenido() == "*" || nodoAuxiliar.getContenido() == "+") && (nodoAuxiliar.getC1() != null))
                 {
-
                     string[] lasts = nodoAuxiliar.getC1().getLast().Split(',');
                     string[] first = nodoAuxiliar.getC1().getFirst().Split(',');
 
