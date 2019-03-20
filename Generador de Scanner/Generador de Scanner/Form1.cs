@@ -31,6 +31,10 @@ namespace Generador_de_Scanner
 
         private void btnAbrirArchivo_Click(object sender, EventArgs e)
         {
+            //PathArchivo = "";
+            //txt = new List<string>();
+            
+
             if (openFileDialog1.ShowDialog() != DialogResult.OK)
                 return;
 
@@ -54,20 +58,47 @@ namespace Generador_de_Scanner
             Lector.Close();
 
             if (procesos.AnalizarArchivo(txt, ref error, ref linea, ref Sets, ref Tokens) == false)
+            {
                 MessageBox.Show("ERROR en Linea " + (linea + 1) + "\n" + error, "ERROR");
+                return;
+            }
 
-            List<string> mensajes = new List<string>();
-            OperarArchivo(ref mensajes, Sets, Tokens);
+                // Lineas con Nullable, Firsts y Lasts
+            List<string> lineasNFL = new List<string>();
+            List<string> follows = new List<string>();
 
-            foreach (var item in mensajes)
+            OperarArchivo(Sets, Tokens, ref follows, ref lineasNFL);
+
+            // Impresion de Firsts y Lasts
+
+            listBox1.Items.Add("Nullable - Firsts & Lasts");
+
+            foreach (var item in lineasNFL)
             {
                 listBox1.Items.Add(item);
             }
+
+            // Impresion de Follows
+
+            listBox1.Items.Add("");
+            listBox1.Items.Add("FOLLOWS");
+
+            foreach (var item in follows)
+            {
+                listBox1.Items.Add(item);
+            }
+            
         }
 
-        private void OperarArchivo(ref List<string> mensajes, List<Set> Sets, List<Token> Tokens)
+
+        /// <summary>
+        /// Se obtienen los First Lasts operando los Tokens... Finalmente se obtienen los Follows
+        /// </summary>
+        /// <param name="Sets">Sets</param>
+        /// <param name="Tokens">Tokens</param>
+        /// <param name="follows">Variable por Referencia</param>
+        private void OperarArchivo(List<Set> Sets, List<Token> Tokens, ref List<string> follows, ref List<string> lineasNFL)
         {
-            
             int leaf = 1;
             int cont = 1;
             Stack<Node> Posfijo = new Stack<Node>();
@@ -79,7 +110,7 @@ namespace Generador_de_Scanner
                 cont = 1;
                 string ER = item.getElementos();
 
-                procesos.ObtenerPosfijo(ref mensajes, ref Posfijo, ref Leafs, Sets, ER, ref cont, ref leaf);
+                procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, ER, ref cont, ref leaf);
 
                 if (Posfijo.Count == 2)
                 {
@@ -101,13 +132,15 @@ namespace Generador_de_Scanner
                     Operador.setC1(C1);
                     Operador.setC2(C2);
 
+                    Operador.setExpresionAcumulada(C1.getExpresionAcumulada() + Operador.getContenido() + C2.getExpresionAcumulada());
+
                     Posfijo.Push(Operador);
                 }
 
             }
 
             cont = 1;
-            procesos.ObtenerPosfijo(ref mensajes, ref Posfijo, ref Leafs, Sets, "(#)", ref cont, ref leaf);
+            procesos.ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, "(#)", ref cont, ref leaf);
 
             // Concatenacion del resultante con #
             Node FOperador = new Node();
@@ -133,9 +166,11 @@ namespace Generador_de_Scanner
             else
                 FOperador.setLast(FC2.getLast());
 
-
             FOperador.setC1(FC1);
             FOperador.setC2(FC2);
+
+            FOperador.setExpresionAcumulada(FC1.getExpresionAcumulada() + FOperador.getContenido() + FC2.getExpresionAcumulada());
+
 
             // Operador Final
             Posfijo.Push(FOperador);
@@ -152,6 +187,18 @@ namespace Generador_de_Scanner
 
             // Busqueda de Follows
             InOrden(Posfijo.Peek(), ref Follows);
+            PostOrden(Posfijo.Peek(), ref lineasNFL);
+
+            foreach (var item in Follows)
+            {
+                string elemento = "";
+                foreach (var elementos in item.Value)
+                {
+                    elemento += elementos + ",";
+                }
+
+                follows.Add(Convert.ToString(item.Key) + " --> " + elemento);
+            }
 
             // Se transforma el first en una lista
             List<string> FirstPadre = new List<string>();
@@ -162,12 +209,12 @@ namespace Generador_de_Scanner
                 FirstPadre.Add(item);
             }
 
-
             Transicion[,] TablaDeTransiciones = TablaTransiciones(FirstPadre, Leafs, Follows);
 
-            MessageBox.Show("Todo OKKKK");
+            //MessageBox.Show("Todo OKKKK");
 
         }
+        
 
         /// <summary>
         /// Metodo que recorre el Arbol en InOrden y Analiza los Follows
@@ -240,6 +287,32 @@ namespace Generador_de_Scanner
         }
 
 
+        /// <summary>
+        /// Metodo que recorre el Arbol en PostOrden y obtiene los firsts y lasts para imprimirlos
+        /// </summary>
+        /// <param name="nodoAuxiliar">Nodo Auxiliar</param>
+        /// <param name="Follows"> Diccionario con los follows </param>
+        private void PostOrden(Node nodoAuxiliar, ref List<string> lineasNFL)
+        {
+            if (nodoAuxiliar != null)
+            {
+                PostOrden(nodoAuxiliar.getC1(), ref lineasNFL);
+                PostOrden(nodoAuxiliar.getC2(), ref lineasNFL);
+
+                string contNodo = nodoAuxiliar.getExpresionAcumulada();
+
+                string last = nodoAuxiliar.getLast();
+                string first = nodoAuxiliar.getFirst();
+
+                if (nodoAuxiliar.getNulable())
+                    lineasNFL.Add("N \t" + contNodo + "\t\t " + "F(" + first + ")" + "   " + "L(" + last + ")                                                        ");
+                else
+                    lineasNFL.Add("NN \t" + contNodo + "\t\t " + "F(" + first + ")" + "   " + "L(" + last + ")                                                        ");
+
+            }
+        }
+
+
         // DESARROLLO TABLA DE TRANSCICIONES
 
         /// <summary>
@@ -282,6 +355,7 @@ namespace Generador_de_Scanner
             letra++;
 
             int fila = 0;
+            bool añadido = false;
 
             do
             {
@@ -360,13 +434,23 @@ namespace Generador_de_Scanner
 
                 string identificador = temp.getIdentificador();
 
+                if (añadido == false)
+                {
+                    if (Pendientes.Count == 0)
+                    {
+                        Transicion Adicional = new Transicion();
+                        Pendientes.Enqueue(Adicional);
+                        añadido = true;
+                    }
+                }
+
             } while (Pendientes.Count != 0);
 
             // Cual es el simbolo terminal
             int simboloTerminal = Leafs.Count;
 
             // Impresion en el DataGridView
-            for (int i = 0; i < filas; i++)
+            for (int i = 0; i < filas - 1; i++)
             {
                 for (int j = 0; j < (Encabezado.Length + 1); j++)
                 {
@@ -389,10 +473,10 @@ namespace Generador_de_Scanner
                     if (TablaDeTransiciones[i, j].getElementos() != null)
                     {
                         dgv_TablaTrancisiones.Rows[i].Cells[j].Value = TablaDeTransiciones[i, j].getElementosCadena() + " "
-                           + TablaDeTransiciones[i, j].getIdentificador();
+                            + TablaDeTransiciones[i, j].getIdentificador();
                         dgv_TablaTrancisiones.Rows[i].Cells[j].Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
                     }
-                    
+
                 }
             }
 
@@ -471,6 +555,8 @@ namespace Generador_de_Scanner
             Transicion temp = new Transicion(Convert.ToString(letra), FirstPadre);
             Transiciones.Add(temp);
             letra++;
+
+            bool añadido = false;
 
             do
             {
@@ -554,9 +640,19 @@ namespace Generador_de_Scanner
                 Linea[0].setElementos(FirstPadre);
                 Linea[0].setIdentificador(identificador);
 
+                if (añadido == false)
+                {
+                    if (Pendientes.Count == 0)
+                    {
+                        Transicion Adicional = new Transicion();
+                        Pendientes.Enqueue(Adicional);
+                        añadido = true;
+                    }
+                }
+
             } while (Pendientes.Count != 0);
 
-            dgv_TablaTrancisiones.Rows.Add(cant - 1);
+            dgv_TablaTrancisiones.Rows.Add(cant - 2);
 
             return cant;
         }

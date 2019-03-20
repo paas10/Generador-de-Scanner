@@ -33,13 +33,13 @@
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.dgv_TablaTrancisiones = new System.Windows.Forms.DataGridView();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.listBox1 = new System.Windows.Forms.ListBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
-            this.tabPage2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgv_TablaTrancisiones)).BeginInit();
+            this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -90,6 +90,14 @@
             this.tabPage1.Text = "Automata Finito Determinista";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // dgv_TablaTrancisiones
+            // 
+            this.dgv_TablaTrancisiones.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgv_TablaTrancisiones.Location = new System.Drawing.Point(9, 63);
+            this.dgv_TablaTrancisiones.Name = "dgv_TablaTrancisiones";
+            this.dgv_TablaTrancisiones.Size = new System.Drawing.Size(1026, 438);
+            this.dgv_TablaTrancisiones.TabIndex = 2;
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.listBox1);
@@ -101,21 +109,14 @@
             this.tabPage2.Text = "Firsts / Lasts / Nullable";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // dgv_TablaTrancisiones
-            // 
-            this.dgv_TablaTrancisiones.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgv_TablaTrancisiones.Location = new System.Drawing.Point(9, 63);
-            this.dgv_TablaTrancisiones.Name = "dgv_TablaTrancisiones";
-            this.dgv_TablaTrancisiones.Size = new System.Drawing.Size(1026, 438);
-            this.dgv_TablaTrancisiones.TabIndex = 2;
-            // 
             // listBox1
             // 
             this.listBox1.FormattingEnabled = true;
+            this.listBox1.HorizontalScrollbar = true;
             this.listBox1.ItemHeight = 19;
             this.listBox1.Location = new System.Drawing.Point(6, 4);
-            this.listBox1.MultiColumn = true;
             this.listBox1.Name = "listBox1";
+            this.listBox1.ScrollAlwaysVisible = true;
             this.listBox1.Size = new System.Drawing.Size(1029, 498);
             this.listBox1.TabIndex = 0;
             // 
@@ -133,8 +134,8 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
-            this.tabPage2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgv_TablaTrancisiones)).EndInit();
+            this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

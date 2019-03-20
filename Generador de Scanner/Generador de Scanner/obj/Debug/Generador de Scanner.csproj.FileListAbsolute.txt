@@ -18,3 +18,13 @@ C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Generador de Scanner\Genera
 C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Generador de Scanner\Generador de Scanner\bin\Debug\Generador de Scanner.exe
 C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Generador de Scanner\Generador de Scanner\bin\Debug\Generador de Scanner.pdb
 C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.csprojResolveAssemblyReference.cache
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\bin\Debug\Generador de Scanner.exe.config
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\bin\Debug\Generador de Scanner.exe
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\bin\Debug\Generador de Scanner.pdb
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.csprojResolveAssemblyReference.cache
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador_de_Scanner.Principal.resources
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador_de_Scanner.Properties.Resources.resources
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.csproj.GenerateResource.Cache
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.csproj.CoreCompileInputs.cache
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.exe
+C:\Users\Admin\Desktop\Generador de Scanner\Generador de Scanner\obj\Debug\Generador de Scanner.pdb

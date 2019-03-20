@@ -1393,7 +1393,7 @@ namespace Generador_de_Scanner
         /// <param name="Sets">Lista con los Sets Existentes</param>
         /// <param name="ExpresionRegular">Token enviado</param>
         /// <param name="cont">Caracter que se está leyendo</param>
-        public void ObtenerPosfijo(ref List<string> mensajes, ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont, ref int leaf)
+        public void ObtenerPosfijo(ref Stack<Node> Posfijo, ref List<Node> Leafs, List<Set> Sets, string ExpresionRegular, ref int cont, ref int leaf)
         {
             string error = "";
             char[] letras = ExpresionRegular.ToCharArray();
@@ -1424,11 +1424,11 @@ namespace Generador_de_Scanner
                     Operador.setC1(C1);
                     Operador.setC2(null);
 
+                    Operador.setExpresionAcumulada(C1.getExpresionAcumulada() + Operador.getContenido());
+
                     Posfijo.Push(Operador);
                     cont++;
 
-                    mensajes.Add(Operador.getC1().getContenido() + " " + Operador.getContenido() + Operador.getC1().getContenido() +
-                        "                                               First ->" + Operador.getFirst() + "        Last ->" + Operador.getLast());
                 }
                 else if (letras[cont] == '.' || letras[cont] == '|')
                 {
@@ -1444,7 +1444,7 @@ namespace Generador_de_Scanner
 
                         int cont2 = 1;
 
-                        ObtenerPosfijo(ref mensajes, ref Posfijo, ref Leafs, Sets, segmento, ref cont2, ref leaf);
+                        ObtenerPosfijo(ref Posfijo, ref Leafs, Sets, segmento, ref cont2, ref leaf);
 
                         cont += cont2 - 1;
                     }
@@ -1492,10 +1492,10 @@ namespace Generador_de_Scanner
                     Operador.setC1(C1);
                     Operador.setC2(C2);
 
-                    Posfijo.Push(Operador);
+                    Operador.setExpresionAcumulada(C1.getExpresionAcumulada() + Operador.getContenido() + C2.getExpresionAcumulada());
 
-                    mensajes.Add(Operador.getC1().getContenido() + " " + Operador.getContenido() + Operador.getC1().getContenido() +
-                        "                                               First ->" + Operador.getFirst() + "        Last ->" + Operador.getLast());
+                    Posfijo.Push(Operador);
+                    
                 }
 
                 try
@@ -1554,7 +1554,7 @@ namespace Generador_de_Scanner
                     if (palabra == "#")
                     {
                         analizar = false;
-                        Node temp = new Node(palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
+                        Node temp = new Node(palabra, palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
 
                         Posfijo.Push(temp);
                         Leafs.Add(temp);
@@ -1567,7 +1567,7 @@ namespace Generador_de_Scanner
                     if (EncontrarLenguajes(Sets, palabras, ref error) || EncontrarPalabras(Sets, palabras, ref error))
                     {
                         analizar = false;
-                        Node temp = new Node(palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
+                        Node temp = new Node(palabra, palabra, false, Convert.ToString(leaf), Convert.ToString(leaf));
 
                         Posfijo.Push(temp);
                         Leafs.Add(temp);
@@ -1578,5 +1578,26 @@ namespace Generador_de_Scanner
             }
         }
 
+        /*
+        private void obtenerIzq(Node Auxiliar, ref string izq)
+        {
+            if (Auxiliar.getC1() != null)
+            {
+                string temp = izq;
+                izq = Auxiliar.getC1().getContenido() + Auxiliar.getContenido() + temp;
+                obtenerIzq(Auxiliar.getC1(), ref izq);
+            }
+        }
+
+        private void obtenerDer(Node Auxiliar, ref string der)
+        {
+            if (Auxiliar.getC2() != null)
+            {
+                string temp = der;
+                der = Auxiliar.getC2().getContenido() + Auxiliar.getContenido() + temp;
+                obtenerIzq(Auxiliar.getC1(), ref der);
+            }
+        }
+        */
     }
 }

@@ -9,6 +9,7 @@ namespace Generador_de_Scanner
     class Node
     {
         private string contenido;
+        private string expresionAcumulada;
         private bool nulable;
         private string first;
         private string last;
@@ -18,6 +19,7 @@ namespace Generador_de_Scanner
         public Node()
         {
             contenido = "";
+            expresionAcumulada = "";
             nulable = false;
             first = "";
             last = "";
@@ -25,9 +27,10 @@ namespace Generador_de_Scanner
             C2 = null;
         }
 
-        public Node(string contenido, bool nulable, string first, string last)
+        public Node(string contenido, string expresionAcumulada, bool nulable, string first, string last)
         {
             this.contenido = contenido;
+            this.expresionAcumulada = expresionAcumulada;
             this.nulable = nulable;
             this.first = first;
             this.last = last;
@@ -88,6 +91,15 @@ namespace Generador_de_Scanner
         public Node getC2()
         {
             return C2;
+        }
+
+        public void setExpresionAcumulada(string expresionAcumulada)
+        {
+            this.expresionAcumulada = expresionAcumulada;
+        }
+        public string getExpresionAcumulada()
+        {
+            return expresionAcumulada;
         }
     }
 }
