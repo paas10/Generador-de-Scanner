@@ -485,7 +485,7 @@ namespace Generador_de_Scanner
         /// <param name="Lista">Lista con el archivo de texto</param>
         /// <param name="linea">Numero de linea analizada. Si el archivo falla la variable contenerá la linea incorrecta</param>
         /// <returns>Si el archivo es correcto retorna true</returns>
-        public bool AnalizarArchivo(List<string> txt, ref string error, ref int linea, ref List<Set> Sets, ref List<Token> Tokens)
+        public bool AnalizarArchivo(List<string> txt, ref string error, ref int linea, ref List<Set> Sets, ref List<Token> Tokens, ref Dictionary<string, int> Actions, ref int iError)
         {
             while (FiltrarEspacio(txt[linea]) == "")
                 linea++;
@@ -508,8 +508,10 @@ namespace Generador_de_Scanner
                     if (FiltrarEspacio(txt[linea]).ToUpper() == "ACTIONS")
                     {
                         linea++;
-                        if (AnalizarActions(txt, ref error, ref linea) == false)
+                        if (AnalizarActions(txt, ref error, ref linea, ref Actions) == false)
                             return false;
+
+                        AnalizarError(txt, ref error, ref linea, ref iError);
                     }
                     else
                     {
@@ -718,7 +720,7 @@ namespace Generador_de_Scanner
             return true;
         }
 
-        private bool AnalizarActions(List<string> txt, ref string error, ref int linea)
+        private bool AnalizarActions(List<string> txt, ref string error, ref int linea, ref Dictionary<string, int> Actions)
         {
             bool leer = true;
             string lineaAnalizada = FiltrarEspacio(txt[linea]);
@@ -832,6 +834,17 @@ namespace Generador_de_Scanner
                             error = "Sintaxis incorrecta. Ausencia de Comilla Simple (')";
                             return false;
                         }
+                        else
+                        {
+                            string ActionSinComillas = "";
+
+                            for (int i = 1; i < contenido.Length - 1; i++)
+                            {
+                                ActionSinComillas += Convert.ToString(contenido[i]);
+                            }
+
+                            Actions.Add(ActionSinComillas, idAction);
+                        }
 
                         linea++;
                     }
@@ -860,7 +873,7 @@ namespace Generador_de_Scanner
             return true;
         }
 
-        private bool AnalizarError(List<string> txt, ref string error, ref int linea)
+        private bool AnalizarError(List<string> txt, ref string error, ref int linea, ref int iError)
         {
             // Error con MAYUSCULAS para el error del archivo de texto
             string[] Error = FiltrarEspacio(txt[linea]).Split('=');
@@ -877,9 +890,7 @@ namespace Generador_de_Scanner
                 return false;
             }
 
-            int numError;
-
-            if (!int.TryParse(Error[1], out numError))
+            if (!int.TryParse(Error[1], out iError))
             {
                 error = "Numero del Error no reconocido ( " + Error[1] + " )";
                 return false;
@@ -1578,26 +1589,6 @@ namespace Generador_de_Scanner
             }
         }
 
-        /*
-        private void obtenerIzq(Node Auxiliar, ref string izq)
-        {
-            if (Auxiliar.getC1() != null)
-            {
-                string temp = izq;
-                izq = Auxiliar.getC1().getContenido() + Auxiliar.getContenido() + temp;
-                obtenerIzq(Auxiliar.getC1(), ref izq);
-            }
-        }
-
-        private void obtenerDer(Node Auxiliar, ref string der)
-        {
-            if (Auxiliar.getC2() != null)
-            {
-                string temp = der;
-                der = Auxiliar.getC2().getContenido() + Auxiliar.getContenido() + temp;
-                obtenerIzq(Auxiliar.getC1(), ref der);
-            }
-        }
-        */
+        
     }
 }
