@@ -116,8 +116,8 @@ namespace Generador_de_Scanner
             sw.WriteLine("{");
             sw.WriteLine("\tclass Program");
             sw.WriteLine("\t{");
-            sw.WriteLine("\t\tpublic static List<int> EstadosAceptacion = new List<int>();");
-            sw.WriteLine("\t\tProcesos procesos = new Procesos();");
+            sw.WriteLine("\t\tpublic static int simboloTerminal = 0;");
+            sw.WriteLine("\t\tpublic static Procesos procesos = new Procesos();");
             sw.WriteLine("\t\t");
             sw.WriteLine("\t\tstatic void Main(string[] args)");
             sw.WriteLine("\t\t{");
@@ -137,6 +137,9 @@ namespace Generador_de_Scanner
             sw.WriteLine("");
 
             sw.Close();
+
+            
+
         }
 
         private void EscribirDeclaracionVariables(ref StreamWriter sw)
@@ -184,7 +187,18 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t");
             foreach (var token in Tokens)
             {
-                sw.WriteLine("\t\t\tTokens.Add(\"" + token.getElementos() + "\", " + token.getNumeroToken() + ");");
+                string elementos = "";
+                char[] caracteres = token.getElementos().ToCharArray();
+
+                foreach (var item in caracteres)
+                {
+                    if (item == '"')
+                        elementos += Convert.ToString(Convert.ToChar(92)) + "\"";
+                    else
+                        elementos += item;
+                }
+
+                sw.WriteLine("\t\t\tTokens.Add(\"" + elementos + "\", " + token.getNumeroToken() + ");");
             }
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\t");
@@ -202,10 +216,32 @@ namespace Generador_de_Scanner
 
         private void EscribirLecturaArchivo(ref StreamWriter sw)
         {
+            openFileDialog1.Title = "Archivo con Entradas <<Segunda Fase>>";
+            openFileDialog1.Filter = "Archivos de texto|*.txt";
+            openFileDialog1.FileName = "";
+
+            if (openFileDialog1.ShowDialog() != DialogResult.OK)
+                return;
+
+            PathArchivo = openFileDialog1.FileName;
+
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tstring line;");
             sw.WriteLine("\t\t\t");
-            sw.WriteLine("\t\t\tStreamReader sr = new StreamReader(\"C:\\\\Users\\\\Admin\\\\Desktop\\\\Prueba.txt\");");
+            // \"C:\\\\Users\\\\Admin\\\\Desktop\\\\Prueba.txt\"
+
+            char[] Path = PathArchivo.ToCharArray();
+            PathArchivo = "";
+
+            foreach (var item in Path)
+            {
+                if (item == Convert.ToChar(92))
+                    PathArchivo += (Convert.ToString(Convert.ToChar(92)) + Convert.ToString(Convert.ToChar(92)));
+                else
+                    PathArchivo += Convert.ToString(item);
+            }
+
+            sw.WriteLine("\t\t\tStreamReader sr = new StreamReader(\"" + PathArchivo + "\");");
             sw.WriteLine("\t\t\tline = sr.ReadLine();");
             sw.WriteLine("\t\t\t");
         }
@@ -214,20 +250,66 @@ namespace Generador_de_Scanner
         {
             sw.WriteLine("\t\t\tstring[] fragmentos = line.Split(' ');");
             sw.WriteLine("\t\t\t");
+            sw.WriteLine("\t\t\t// Se separa la entrada por espacios y se analiza cada fragmento individualmente.");
             sw.WriteLine("\t\t\tforeach (var fragmento in fragmentos)");
             sw.WriteLine("\t\t\t{");
+            sw.WriteLine("\t\t\t\tint TokenInmediato = -1;");
+            sw.WriteLine("\t\t\t\tint TokenLargo = -1;");
+            sw.WriteLine("\t\t\t\t");
+            sw.WriteLine("\t\t\t\t// Analiza si la entrada forma parte de las Actions");
             sw.WriteLine("\t\t\t\tif (Actions.ContainsKey(fragmento))");
             sw.WriteLine("\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\tConsole.WriteLine(Actions[fragmento]);");
+            sw.WriteLine("\t\t\t\t\tConsole.WriteLine(fragmento + \"\t\t\" + Actions[fragmento]);");
             sw.WriteLine("\t\t\t\t}");
             sw.WriteLine("\t\t\t\telse");
             sw.WriteLine("\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\t");
+
+            sw.WriteLine("\t\t\t\t\t// Analiza token por token");
             sw.WriteLine("\t\t\t\t\tforeach (var item in Tokens)");
             sw.WriteLine("\t\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\t\tTransicion[,] TablaDeTransiciones = OperarArchivo(Sets, item.Key);");
-            sw.WriteLine("\t\t\t\t\t\tEstadosAceptacion = new List<int>();");
+            sw.WriteLine("\t\t\t\t\t\tList<String> TokenDirecto = procesos.VerificarTokenDirecto(item.Key);");
+            sw.WriteLine("\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\tif (TokenDirecto.Count() != 0)");
+            sw.WriteLine("\t\t\t\t\t\t{");
+            sw.WriteLine("\t\t\t\t\t\t\tchar[] caracteres = fragmento.ToCharArray();");
+            sw.WriteLine("\t\t\t\t\t\t\tbool coincide = true;");
+            sw.WriteLine("\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\ttry");
+            sw.WriteLine("\t\t\t\t\t\t\t{");
+            sw.WriteLine("\t\t\t\t\t\t\t\tfor (int i = 0; i < caracteres.Length; i++)");
+            sw.WriteLine("\t\t\t\t\t\t\t\t{");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\tif (!Convert.ToString(caracteres[i]).Equals(TokenDirecto[i]))");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\t\tcoincide = false;");
+            sw.WriteLine("\t\t\t\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t\t\tcatch");
+            sw.WriteLine("\t\t\t\t\t\t\t{");
+            sw.WriteLine("\t\t\t\t\t\t\t\tcoincide = false;");
+            sw.WriteLine("\t\t\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\tif (coincide)");
+            sw.WriteLine("\t\t\t\t\t\t\t\tTokenInmediato = item.Value;");
+            sw.WriteLine("\t\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t\telse");
+            sw.WriteLine("\t\t\t\t\t\t{");
+            sw.WriteLine("\t\t\t\t\t\t\tQueue<string> Expresion = procesos.ConvertToSets(Sets, fragmento);");
+            sw.WriteLine("\t\t\t\t\t\t\tColumna[] Encabezado = new Columna[100];");
+            sw.WriteLine("\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\tTransicion[,] TablaDeTransiciones = OperarArchivo(Sets, item.Key, ref Encabezado);");
+            sw.WriteLine("\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\tif (procesos.AnalizarEntrada(Encabezado, TablaDeTransiciones, Expresion, simboloTerminal))");
+            sw.WriteLine("\t\t\t\t\t\t\t\tTokenLargo = item.Value;");
+            sw.WriteLine("\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\tif (TokenInmediato != -1)");
+            sw.WriteLine("\t\t\t\t\t\tConsole.WriteLine(fragmento + \"\t\t\" + TokenInmediato);");
+            sw.WriteLine("\t\t\t\t\telse if (TokenLargo != -1)");
+            sw.WriteLine("\t\t\t\t\t\tConsole.WriteLine(fragmento + \"\t\t\" + TokenLargo);");
+            sw.WriteLine("\t\t\t\t\telse");
+            sw.WriteLine("\t\t\t\t\t\tConsole.WriteLine(\"ERROR\t\t\" + error);");
+            sw.WriteLine("\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t}");
             sw.WriteLine("\t\t\t}");
             sw.WriteLine("\t\t\t");
@@ -237,7 +319,7 @@ namespace Generador_de_Scanner
         private void EscribirGenerarAutomataToken(ref StreamWriter sw)
         {
             sw.WriteLine("\t\t");
-            sw.WriteLine("\t\tstatic private Transicion[,] OperarArchivo(List<Set> Sets, string Token)");
+            sw.WriteLine("\t\tstatic private Transicion[,] OperarArchivo(List<Set> Sets, string Token, ref Columna[] Encabezado)");
             sw.WriteLine("\t\t{");
             sw.WriteLine("\t\t\tint leaf = 1;");
             sw.WriteLine("\t\t\tint cont = 1;");
@@ -342,7 +424,7 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t\tFirstPadre.Add(item);");
             sw.WriteLine("\t\t\t}");
             sw.WriteLine("\t\t\t");
-            sw.WriteLine("\t\t\tTransicion[,] TablaDeTransiciones = TablaTransiciones(FirstPadre, Leafs, Follows);");
+            sw.WriteLine("\t\t\tTransicion[,] TablaDeTransiciones = TablaTransiciones(FirstPadre, Leafs, Follows, ref Encabezado);");
             sw.WriteLine("\t\t\treturn TablaDeTransiciones;");
             sw.WriteLine("\t\t}");
             sw.WriteLine("\t\t");
@@ -408,9 +490,9 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t}");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\t");
-            sw.WriteLine("\t\tstatic private Transicion[,] TablaTransiciones(List<string> FirstPadre, List<Node> Leafs, Dictionary<int, List<int>> Follows)");
+            sw.WriteLine("\t\tstatic private Transicion[,] TablaTransiciones(List<string> FirstPadre, List<Node> Leafs, Dictionary<int, List<int>> Follows, ref Columna[] Encabezado)");
             sw.WriteLine("\t\t{");
-            sw.WriteLine("\t\t\tColumna[] Encabezado = ConstruirColumnas(Leafs);");
+            sw.WriteLine("\t\t\tEncabezado = ConstruirColumnas(Leafs);");
             sw.WriteLine("\t\t\tint filas = CantFilas(FirstPadre, Encabezado, Follows);");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tTransicion[,] TablaDeTransiciones = new Transicion[filas, Encabezado.Length + 1];");
@@ -437,15 +519,19 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\t// Punto inicial de la tabla de transiciones");
             sw.WriteLine("\t\t\tTransicion temp = new Transicion(Convert.ToString(letra), FirstPadre);");
-            sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tTransiciones.Add(temp);");
             sw.WriteLine("\t\t\tletra++;");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tint fila = 0;");
-            sw.WriteLine("\t\t\tbool añadido = false;");
+            sw.WriteLine("\t\t\tbool analizar = true;");
+            sw.WriteLine("\t\t\tbool UltimaIteracion = false;");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tdo");
             sw.WriteLine("\t\t\t{");
+            sw.WriteLine("\t\t\t\t// Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)");
+            sw.WriteLine("\t\t\t\tif (UltimaIteracion == true)");
+            sw.WriteLine("\t\t\t\t\tanalizar = false;");
+            sw.WriteLine("\t\t\t\t");
             sw.WriteLine("\t\t\t\t// Por cada Columna (Hoja)");
             sw.WriteLine("\t\t\t\tforeach (var Columna in Encabezado)");
             sw.WriteLine("\t\t\t\t{");
@@ -462,15 +548,15 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t\t\t\t\t\tElementos.Add(Convert.ToString(item));");
             sw.WriteLine("\t\t\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t\t\t\tint posicion = Columna.getNumColumna();");
-            sw.WriteLine("\t\t\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t\t\t\tTablaDeTransiciones[fila, posicion].setElementos(Elementos);");
+            sw.WriteLine("\t\t\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t\t\t\tbool añadir = true;");
-            sw.WriteLine("\t\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t\t\t\tforeach (var item in Transiciones)");
             sw.WriteLine("\t\t\t\t\t\t\t{");
             sw.WriteLine("\t\t\t\t\t\t\t\tif (TablaDeTransiciones[fila, Columna.getNumColumna()].getElementos() == item.getElementos())");
             sw.WriteLine("\t\t\t\t\t\t\t\t\tañadir = false;");
             sw.WriteLine("\t\t\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t\t\t\tif (añadir)");
             sw.WriteLine("\t\t\t\t\t\t\t{");
             sw.WriteLine("\t\t\t\t\t\t\t\tbool letraExistente = false;");
@@ -505,39 +591,37 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t\t\t\t\t\t\tletra++;");
             sw.WriteLine("\t\t\t\t\t\t\t\t\tTransiciones.Add(TablaDeTransiciones[fila, Columna.getNumColumna()]);");
             sw.WriteLine("\t\t\t\t\t\t\t\t\tPendientes.Enqueue(TablaDeTransiciones[fila, Columna.getNumColumna()]);");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\tif (Pendientes.Count != 0 && analizar == false)");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\t\tanalizar = true;");
             sw.WriteLine("\t\t\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t}");
-            sw.WriteLine("\t\t\t\tfila++;");
-            sw.WriteLine("\t\t\t\ttemp = Pendientes.Dequeue();");
-            sw.WriteLine("\t\t\t\tFirstPadre = temp.getElementos();");
             sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tTablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());");
-            sw.WriteLine("\t\t\t\tTablaDeTransiciones[fila, 0].setElementos(temp.getElementos());");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tstring identificador = temp.getIdentificador();");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tif (añadido == false)");
+            sw.WriteLine("\t\t\t\ttry");
             sw.WriteLine("\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\tif (Pendientes.Count == 0)");
-            sw.WriteLine("\t\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\t\tTransicion Adicional = new Transicion();");
-            sw.WriteLine("\t\t\t\t\t\tPendientes.Enqueue(Adicional);");
-            sw.WriteLine("\t\t\t\t\t\tañadido = true;");
-            sw.WriteLine("\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\tfila++;");
+            sw.WriteLine("\t\t\t\t\ttemp = Pendientes.Dequeue();");
+            sw.WriteLine("\t\t\t\t\tFirstPadre = temp.getElementos();");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\tTablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());");
+            sw.WriteLine("\t\t\t\t\tTablaDeTransiciones[fila, 0].setElementos(temp.getElementos());");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\tstring identificador = temp.getIdentificador();");
+            sw.WriteLine("\t\t\t\t\t");
             sw.WriteLine("\t\t\t\t}");
-            sw.WriteLine("\t\t\t} while (Pendientes.Count != 0);");
+            sw.WriteLine("\t\t\t\tcatch (Exception e) { }");
+            sw.WriteLine("\t\t\t");
+            sw.WriteLine("\t\t\t// Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion");
+            sw.WriteLine("\t\t\tif (Pendientes.Count == 0)");
+            sw.WriteLine("\t\t\tUltimaIteracion = true;");
+            sw.WriteLine("\t\t\t");
+            sw.WriteLine("\t\t\t} while (analizar);");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\t// Cual es el simbolo terminal");
-            sw.WriteLine("\t\t\tint simboloTerminal = Leafs.Count;");
-            sw.WriteLine("\t\t\t");
-            sw.WriteLine("\t\t\tfor (int i = 0; i < filas - 1; i++)");
-            sw.WriteLine("\t\t\t{");
-            sw.WriteLine("\t\t\t\tif (TablaDeTransiciones[i, 0].getElementos().Contains(Convert.ToString(simboloTerminal)))");
-            sw.WriteLine("\t\t\t\t\tEstadosAceptacion.Add(i);");
-            sw.WriteLine("\t\t\t}");
+            sw.WriteLine("\t\t\tsimboloTerminal = Leafs.Count;");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\treturn TablaDeTransiciones;");
             sw.WriteLine("\t\t}");
@@ -556,7 +640,24 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\tfor (int i = 0; i < Encabezado.Length; i++)");
             sw.WriteLine("\t\t\t{");
             sw.WriteLine("\t\t\t\tEncabezado[i] = new Columna();");
+
+            sw.WriteLine("\t\t\t\tif (nombres[i] == \"α\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\"(\");");
+            sw.WriteLine("\t\t\t\telse if (nombres[i] == \"β\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\")\");");
+            sw.WriteLine("\t\t\t\telse if (nombres[i] == \"ɣ\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\".\");");
+            sw.WriteLine("\t\t\t\telse if (nombres[i] == \"δ\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\"*\");");
+            sw.WriteLine("\t\t\t\telse if (nombres[i] == \"ε\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\"+\");");
+            sw.WriteLine("\t\t\t\telse if (nombres[i] == \"ϑ\")");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(\"?\");");
+            sw.WriteLine("\t\t\t\telse");
+            sw.WriteLine("\t\t\t\t\tEncabezado[i].setNombre(nombres[i]);");
+
             sw.WriteLine("\t\t\t\tEncabezado[i].setNombre(nombres[i]);");
+
             sw.WriteLine("\t\t\t\tEncabezado[i].setNumColumna(i + 1);");
             sw.WriteLine("\t\t\t\t");
             sw.WriteLine("\t\t\t\tList<int> hojas = new List<int>();");
@@ -600,10 +701,15 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\tTransiciones.Add(temp);");
             sw.WriteLine("\t\t\tletra++;");
             sw.WriteLine("\t\t\t");
-            sw.WriteLine("\t\t\tbool añadido = false;");
+            sw.WriteLine("\t\t\tbool analizar = true;");
+            sw.WriteLine("\t\t\tbool UltimaIteracion = false;");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\tdo");
             sw.WriteLine("\t\t\t{");
+            sw.WriteLine("\t\t\t\t// Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)");
+            sw.WriteLine("\t\t\t\tif (UltimaIteracion == true)");
+            sw.WriteLine("\t\t\t\t\tanalizar = false;");
+            sw.WriteLine("\t\t\t\t");
             sw.WriteLine("\t\t\t\t// Por cada Columna (Hoja)");
             sw.WriteLine("\t\t\t\tforeach (var Columna in Encabezado)");
             sw.WriteLine("\t\t\t\t{");
@@ -665,36 +771,38 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t\t\t\t\t\t\t\tletra++;");
             sw.WriteLine("\t\t\t\t\t\t\t\t\tTransiciones.Add(Linea[Columna.getNumColumna()]);");
             sw.WriteLine("\t\t\t\t\t\t\t\t\tPendientes.Enqueue(Linea[Columna.getNumColumna()]);");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\tif (Pendientes.Count != 0 && analizar == false)");
+            sw.WriteLine("\t\t\t\t\t\t\t\t\t\tanalizar = true;");
             sw.WriteLine("\t\t\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t\t}");
             sw.WriteLine("\t\t\t\t}");
             sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tcant++;");
-            sw.WriteLine("\t\t\t\ttemp = Pendientes.Dequeue();");
-            sw.WriteLine("\t\t\t\tFirstPadre = temp.getElementos();");
-            sw.WriteLine("\t\t\t\tstring identificador = temp.getIdentificador();");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tLinea = new Transicion[Encabezado.Length + 1];");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\t// Inicializacion de la lista");
-            sw.WriteLine("\t\t\t\tfor (int i = 0; i < Linea.Length; i++)");
-            sw.WriteLine("\t\t\t\t\tLinea[i] = new Transicion();");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tLinea[0].setElementos(FirstPadre);");
-            sw.WriteLine("\t\t\t\tLinea[0].setIdentificador(identificador);");
-            sw.WriteLine("\t\t\t\t");
-            sw.WriteLine("\t\t\t\tif (añadido == false)");
+            sw.WriteLine("\t\t\t\ttry");
             sw.WriteLine("\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\tif (Pendientes.Count == 0)");
-            sw.WriteLine("\t\t\t\t\t{");
-            sw.WriteLine("\t\t\t\t\t\tTransicion Adicional = new Transicion();");
-            sw.WriteLine("\t\t\t\t\t\tPendientes.Enqueue(Adicional);");
-            sw.WriteLine("\t\t\t\t\t\tañadido = true;");
-            sw.WriteLine("\t\t\t\t\t}");
+            sw.WriteLine("\t\t\t\t\tcant++;");
+            sw.WriteLine("\t\t\t\t\ttemp = Pendientes.Dequeue();");
+            sw.WriteLine("\t\t\t\t\tFirstPadre = temp.getElementos();");
+            sw.WriteLine("\t\t\t\t\tstring identificador = temp.getIdentificador();");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\tLinea = new Transicion[Encabezado.Length + 1];");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\t// Inicializacion de la lista");
+            sw.WriteLine("\t\t\t\t\tfor (int i = 0; i < Linea.Length; i++)");
+            sw.WriteLine("\t\t\t\t\t\tLinea[i] = new Transicion();");
+            sw.WriteLine("\t\t\t\t\t");
+            sw.WriteLine("\t\t\t\t\tLinea[0].setElementos(FirstPadre);");
+            sw.WriteLine("\t\t\t\t\tLinea[0].setIdentificador(identificador);");
+            sw.WriteLine("\t\t\t\t");
             sw.WriteLine("\t\t\t\t}");
-            sw.WriteLine("\t\t\t} while (Pendientes.Count != 0);");
+            sw.WriteLine("\t\t\t\tcatch (Exception e) { }");
+            sw.WriteLine("\t\t\t\t");
+            sw.WriteLine("\t\t\t\t// Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion");
+            sw.WriteLine("\t\t\t\tif (Pendientes.Count == 0)");
+            sw.WriteLine("\t\t\t\t\tUltimaIteracion = true; ");
+            sw.WriteLine("\t\t\t} while (analizar);");
             sw.WriteLine("\t\t\t");
             sw.WriteLine("\t\t\treturn cant;");
             sw.WriteLine("\t\t}");
@@ -969,10 +1077,16 @@ namespace Generador_de_Scanner
             letra++;
 
             int fila = 0;
-            bool añadido = false;
+
+            bool analizar = true;
+            bool UltimaIteracion = false;
 
             do
             {
+                // Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)
+                if (UltimaIteracion == true)
+                    analizar = false;
+
                 // Por cada Columna (Hoja)
                 foreach (var Columna in Encabezado)
                 {
@@ -1033,32 +1147,33 @@ namespace Generador_de_Scanner
                                     letra++;
                                     Transiciones.Add(TablaDeTransiciones[fila, Columna.getNumColumna()]);
                                     Pendientes.Enqueue(TablaDeTransiciones[fila, Columna.getNumColumna()]);
+
+                                    if (Pendientes.Count != 0 && analizar == false)
+                                        analizar = true;
                                 }
                             }
                         }
                     }
                 }
 
-                fila++;
-                temp = Pendientes.Dequeue();
-                FirstPadre = temp.getElementos();
-
-                TablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());
-                TablaDeTransiciones[fila, 0].setElementos(temp.getElementos());
-
-                string identificador = temp.getIdentificador();
-
-                if (añadido == false)
+                try
                 {
-                    if (Pendientes.Count == 0)
-                    {
-                        Transicion Adicional = new Transicion();
-                        Pendientes.Enqueue(Adicional);
-                        añadido = true;
-                    }
-                }
+                    fila++;
+                    temp = Pendientes.Dequeue();
+                    FirstPadre = temp.getElementos();
 
-            } while (Pendientes.Count != 0);
+                    TablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());
+                    TablaDeTransiciones[fila, 0].setElementos(temp.getElementos());
+
+                    string identificador = temp.getIdentificador();
+                }
+                catch (Exception e) { }
+
+                // Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion
+                if (Pendientes.Count == 0)
+                    UltimaIteracion = true;
+
+            } while (analizar);
 
             // Cual es el simbolo terminal
             int simboloTerminal = Leafs.Count;
@@ -1116,7 +1231,22 @@ namespace Generador_de_Scanner
             for (int i = 0; i < Encabezado.Length; i++)
             {
                 Encabezado[i] = new Columna();
-                Encabezado[i].setNombre(nombres[i]);
+
+                if (nombres[i] == "α")
+                    Encabezado[i].setNombre("(");
+                else if (nombres[i] == "β")
+                    Encabezado[i].setNombre(")");
+                else if (nombres[i] == "ɣ")
+                    Encabezado[i].setNombre(".");
+                else if (nombres[i] == "δ")
+                    Encabezado[i].setNombre("*");
+                else if (nombres[i] == "ε")
+                    Encabezado[i].setNombre("+");
+                else if (nombres[i] == "ϑ")
+                    Encabezado[i].setNombre("?");
+                else 
+                    Encabezado[i].setNombre(nombres[i]);
+
                 Encabezado[i].setNumColumna(i + 1);
                 List<int> hojas = new List<int>();
 
@@ -1170,10 +1300,15 @@ namespace Generador_de_Scanner
             Transiciones.Add(temp);
             letra++;
 
-            bool añadido = false;
+            bool analizar = true;
+            bool UltimaIteracion = false;
 
             do
             {
+                // Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)
+                if (UltimaIteracion == true)
+                    analizar = false;
+
                 // Por cada Columna (Hoja)
                 foreach (var Columna in Encabezado)
                 {
@@ -1234,37 +1369,38 @@ namespace Generador_de_Scanner
                                     letra++;
                                     Transiciones.Add(Linea[Columna.getNumColumna()]);
                                     Pendientes.Enqueue(Linea[Columna.getNumColumna()]);
+
+                                    if (Pendientes.Count != 0 && analizar == false)
+                                        analizar = true;
                                 }
                             }
                         }
                     }
                 }
 
-                cant++;
-                temp = Pendientes.Dequeue();
-                FirstPadre = temp.getElementos();
-                string identificador = temp.getIdentificador();
-
-                Linea = new Transicion[Encabezado.Length + 1];
-
-                // Inicializacion de la lista
-                for (int i = 0; i < Linea.Length; i++)
-                    Linea[i] = new Transicion();
-
-                Linea[0].setElementos(FirstPadre);
-                Linea[0].setIdentificador(identificador);
-
-                if (añadido == false)
+                try
                 {
-                    if (Pendientes.Count == 0)
-                    {
-                        Transicion Adicional = new Transicion();
-                        Pendientes.Enqueue(Adicional);
-                        añadido = true;
-                    }
-                }
+                    cant++;
+                    temp = Pendientes.Dequeue();
+                    FirstPadre = temp.getElementos();
+                    string identificador = temp.getIdentificador();
 
-            } while (Pendientes.Count != 0);
+                    Linea = new Transicion[Encabezado.Length + 1];
+
+                    // Inicializacion de la lista
+                    for (int i = 0; i < Linea.Length; i++)
+                        Linea[i] = new Transicion();
+
+                    Linea[0].setElementos(FirstPadre);
+                    Linea[0].setIdentificador(identificador);
+                }
+                catch (Exception e) { }
+
+                // Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion
+                if (Pendientes.Count == 0)
+                    UltimaIteracion = true;
+
+            } while (analizar);
 
             dgv_TablaTrancisiones.Rows.Add(cant - 2);
 

@@ -8,6 +8,8 @@ namespace Scanner
 {
     class Procesos
     {
+
+
         /// <summary>
         /// Método que opera Posfijo cada Token enviado
         /// </summary>
@@ -201,6 +203,160 @@ namespace Scanner
             }
         }
 
+        /// <summary>
+        /// Eliminta todos los espacios y tabs de la linea enviada
+        /// </summary>
+        /// <param name="linea"> Linea a analizar </param>
+        /// <returns> Linea sin espacios </returns>
+        public string FiltrarEspacio(string linea)
+        {
+            char[] letras = linea.ToCharArray();
+            string linea_sin_espacios = "";
+
+            foreach (char letra in linea)
+            {
+                if (letra != ' ' && letra != '\t')
+                    linea_sin_espacios += Convert.ToString(letra);
+            }
+
+            return linea_sin_espacios;
+        }
+
+        public List<string> VerificarTokenDirecto(string Token)
+        {
+            List<string> TokenDirecto = new List<string>();
+            bool directo = true;
+
+            string TokenSinEspacios = FiltrarEspacio(Token);
+            char[] temp = TokenSinEspacios.ToCharArray();
+
+            for (int i = 1; i < temp.Length - 1; i++)
+            {
+                if ((temp[i] == '*' || temp[i] == '+' || temp[i] == '?') && (temp[i + 1] == '.' || temp[i + 1] == ')' || temp[i - 1] == ')'))
+                    directo = false;
+            }
+
+            if ((temp[temp.Length - 1] == '*' || temp[temp.Length - 1] == '+' || temp[temp.Length - 1] == '?') && temp[temp.Length - 2] == ')')
+                directo = false;
+
+            if (directo)
+            {
+                bool abierto = false;
+
+                for (int i = 0; i < temp.Length; i++)
+                {
+                    if ((temp[i] == '\'' || temp[i] == '(') && abierto == false)
+                        abierto = true;
+
+                    if ((temp[i] == '\'' || temp[i] == ')') && abierto == true)
+                        abierto = false;
+                    else if (abierto == true && (temp[i] != '\'' && temp[i] != '(' && temp[i] != '.'))
+                        TokenDirecto.Add(Convert.ToString(temp[i]));
+                }
+            }
+            else
+            {
+                TokenDirecto.Clear();
+            }
+
+            return TokenDirecto;
+        }
+
+        public Queue<string> ConvertToSets(List<Set> Sets, string entrada)
+        {
+            Queue<string> Salida = new Queue<string>();
+
+            int cont = 0;
+            char[] caracter = entrada.ToCharArray();
+
+            
+            while (cont < caracter.Length)
+            {
+                bool encontrado = false;
+                string segmento = Convert.ToString(caracter[cont]);
+
+                foreach (var item in Sets)
+                {
+                    if (item.getElementos().Contains(segmento))
+                    {
+                        encontrado = true;
+                        Salida.Enqueue(item.getNombre());
+                        cont++;
+                        break;
+                    }
+                }
+
+                // Si el segmento analizado no se encontró en ningun Set se retorna una cola vacia, que significa ERROR
+                if (encontrado == false)
+                {
+                    Salida.Clear();
+                    break;
+                }
+            }
+
+            return Salida;
+        }
+
+        public bool AnalizarEntrada(Columna[] Encabezado, Transicion[,] TablaDeTransiciones, Queue<string> Expresion, int simboloTerminal)
+        {
+            int columna = -1;
+            string FilaActual = "A";
+            int numFilaActual = -1;
+
+            //>>
+            while (Expresion.Count() != 0)
+            {
+                string Elemento = Expresion.Dequeue();
+
+                for (int i = 0; i < Encabezado.Length; i++)
+                {
+                    if (Elemento.Equals(Encabezado[i].getNombre()))
+                    {
+                        columna = i + 1;
+                        break;
+                    }
+                }
+
+                // Porque no encontró la columna
+                if (columna == -1)
+                    return false;
+
+                //  
+                int cont = 0;
+                while (TablaDeTransiciones[cont, 0] != null)
+                {
+                    if (TablaDeTransiciones[cont, 0].getIdentificador().Equals(FilaActual))
+                    {
+                        numFilaActual = cont;
+                        break;
+                    }
+                    else
+                    {
+                        cont++;
+                    }
+                }
+
+                if (TablaDeTransiciones[numFilaActual, columna].getElementos() != null)
+                {
+                    FilaActual = TablaDeTransiciones[numFilaActual, columna].getIdentificador();
+
+                    if (Expresion.Count() == 0)
+                    {
+                        if (TablaDeTransiciones[numFilaActual, columna].getElementos().Contains(Convert.ToString(simboloTerminal)))
+                            return true;
+                        else
+                            return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
 
         private bool EncontrarLenguajes(List<Set> Sets, List<string> lenguajes, ref string error)
         {
@@ -219,8 +375,15 @@ namespace Scanner
 
                 if (encontrada == false)
                 {
-                    error = "No se ha encontrado \"" + lenguaje + "\" definido en los SETS";
-                    return false;
+                    if (lenguaje == "α" || lenguaje == "β" || lenguaje == "ɣ" || lenguaje == "δ" || lenguaje == "ε" || lenguaje == "ϑ")
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        error = "No se ha encontrado \"" + lenguaje + "\" definido en los SETS";
+                        return false;
+                    }
                 }
 
             }
@@ -248,8 +411,16 @@ namespace Scanner
 
                 if (encontrada == false)
                 {
-                    error = "No se ha encontrado \"" + palabra + "\" definido en los SETS";
-                    return false;
+                    if (palabra == "α" || palabra == "β" || palabra == "ɣ" || palabra == "δ" || palabra == "ε" || palabra == "ϑ")
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        error = "No se ha encontrado \"" + palabra + "\" definido en los SETS";
+                        return false;
+                    }
+
                 }
             }
 

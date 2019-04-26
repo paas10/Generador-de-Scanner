@@ -9,8 +9,8 @@ namespace Scanner
 {
 	class Program
 	{
-		public static List<int> EstadosAceptacion = new List<int>();
-		Procesos procesos = new Procesos();
+		public static int simboloTerminal = 0;
+		public static Procesos procesos = new Procesos();
 		
 		static void Main(string[] args)
 		{
@@ -337,6 +337,36 @@ namespace Scanner
 			Dictionary<string, int> Tokens = new Dictionary<string, int>();
 			
 			Tokens.Add("(DIGITO.(DIGITO*))", 1);
+			Tokens.Add("((\".CHARSET.\")|('.CHARSET.'))", 2);
+			Tokens.Add("(=)", 4);
+			Tokens.Add("(<.>)", 5);
+			Tokens.Add("(<)", 6);
+			Tokens.Add("(>)", 7);
+			Tokens.Add("(>.=)", 8);
+			Tokens.Add("(<.=)", 9);
+			Tokens.Add("(ε)", 10);
+			Tokens.Add("(-)", 11);
+			Tokens.Add("(O.R)", 12);
+			Tokens.Add("(δ)", 13);
+			Tokens.Add("(A.N.D)", 14);
+			Tokens.Add("(M.O.D)", 15);
+			Tokens.Add("(D.I.V)", 16);
+			Tokens.Add("(N.O.T)", 17);
+			Tokens.Add("(α.δ)", 40);
+			Tokens.Add("(δ.β)", 41);
+			Tokens.Add("(;)", 42);
+			Tokens.Add("(ɣ)", 43);
+			Tokens.Add("({)", 44);
+			Tokens.Add("(})", 45);
+			Tokens.Add("(α)", 46);
+			Tokens.Add("(β)", 47);
+			Tokens.Add("([)", 48);
+			Tokens.Add("(])", 49);
+			Tokens.Add("(ɣ.ɣ)", 50);
+			Tokens.Add("(:)", 51);
+			Tokens.Add("(,)", 52);
+			Tokens.Add("(:.=)", 53);
+			Tokens.Add("(LETRA.((LETRA|DIGITO)*))", 3);
 			
 			
 			Dictionary<string, int> Actions = new Dictionary<string, int>();
@@ -346,6 +376,23 @@ namespace Scanner
 			Actions.Add("CONST", 20);
 			Actions.Add("TYPE", 21);
 			Actions.Add("VAR", 22);
+			Actions.Add("RECORD", 23);
+			Actions.Add("ARRAY", 24);
+			Actions.Add("OF", 25);
+			Actions.Add("PROCEDURE", 26);
+			Actions.Add("FUNCTION", 27);
+			Actions.Add("IF", 28);
+			Actions.Add("THEN", 29);
+			Actions.Add("ELSE", 30);
+			Actions.Add("FOR", 31);
+			Actions.Add("TO", 32);
+			Actions.Add("WHILE", 33);
+			Actions.Add("DO", 34);
+			Actions.Add("EXIT", 35);
+			Actions.Add("END", 36);
+			Actions.Add("CASE", 37);
+			Actions.Add("BREAK", 38);
+			Actions.Add("DOWNTO", 39);
 			
 			
 			string line;
@@ -355,27 +402,72 @@ namespace Scanner
 			
 			string[] fragmentos = line.Split(' ');
 			
+			// Se separa la entrada por espacios y se analiza cada fragmento individualmente.
 			foreach (var fragmento in fragmentos)
 			{
+				int TokenInmediato = -1;
+				int TokenLargo = -1;
+				
+				// Analiza si la entrada forma parte de las Actions
 				if (Actions.ContainsKey(fragmento))
 				{
-					Console.WriteLine(Actions[fragmento]);
+					Console.WriteLine(fragmento + "		" + Actions[fragmento]);
 				}
 				else
 				{
-					
+					// Analiza token por token
 					foreach (var item in Tokens)
 					{
-						Transicion[,] TablaDeTransiciones = OperarArchivo(Sets, item.Key);
-						EstadosAceptacion = new List<int>();
+						List<String> TokenDirecto = procesos.VerificarTokenDirecto(item.Key);
+						
+						if (TokenDirecto.Count() != 0)
+						{
+							char[] caracteres = fragmento.ToCharArray();
+							bool coincide = true;
+							
+							try
+							{
+								for (int i = 0; i < caracteres.Length; i++)
+								{
+									if (!Convert.ToString(caracteres[i]).Equals(TokenDirecto[i]))
+										coincide = false;
+								}
+							}
+							catch
+							{
+								coincide = false;
+							}
+							
+							if (coincide)
+								TokenInmediato = item.Value;
+						}
+						else
+						{
+							Queue<string> Expresion = procesos.ConvertToSets(Sets, fragmento);
+							Columna[] Encabezado = new Columna[100];
+							
+							Transicion[,] TablaDeTransiciones = OperarArchivo(Sets, item.Key, ref Encabezado);
+							
+							if (procesos.AnalizarEntrada(Encabezado, TablaDeTransiciones, Expresion, simboloTerminal))
+								TokenLargo = item.Value;
+							
+						}
 					}
+					
+					if (TokenInmediato != -1)
+						Console.WriteLine(fragmento + "		" + TokenInmediato);
+					else if (TokenLargo != -1)
+						Console.WriteLine(fragmento + "		" + TokenLargo);
+					else
+						Console.WriteLine("ERROR		" + error);
+					
 				}
 			}
 			
 			Console.ReadKey();
 		}
 		
-		static private Transicion[,] OperarArchivo(List<Set> Sets, string Token)
+		static private Transicion[,] OperarArchivo(List<Set> Sets, string Token, ref Columna[] Encabezado)
 		{
 			int leaf = 1;
 			int cont = 1;
@@ -480,7 +572,7 @@ namespace Scanner
 				FirstPadre.Add(item);
 			}
 			
-			Transicion[,] TablaDeTransiciones = TablaTransiciones(FirstPadre, Leafs, Follows);
+			Transicion[,] TablaDeTransiciones = TablaTransiciones(FirstPadre, Leafs, Follows, ref Encabezado);
 			return TablaDeTransiciones;
 		}
 		
@@ -546,9 +638,9 @@ namespace Scanner
 		}
 			
 			
-		static private Transicion[,] TablaTransiciones(List<string> FirstPadre, List<Node> Leafs, Dictionary<int, List<int>> Follows)
+		static private Transicion[,] TablaTransiciones(List<string> FirstPadre, List<Node> Leafs, Dictionary<int, List<int>> Follows, ref Columna[] Encabezado)
 		{
-			Columna[] Encabezado = ConstruirColumnas(Leafs);
+			Encabezado = ConstruirColumnas(Leafs);
 			int filas = CantFilas(FirstPadre, Encabezado, Follows);
 			
 			Transicion[,] TablaDeTransiciones = new Transicion[filas, Encabezado.Length + 1];
@@ -575,15 +667,19 @@ namespace Scanner
 			
 			// Punto inicial de la tabla de transiciones
 			Transicion temp = new Transicion(Convert.ToString(letra), FirstPadre);
-			
 			Transiciones.Add(temp);
 			letra++;
 			
 			int fila = 0;
-			bool añadido = false;
+			bool analizar = true;
+			bool UltimaIteracion = false;
 			
 			do
 			{
+				// Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)
+				if (UltimaIteracion == true)
+					analizar = false;
+				
 				// Por cada Columna (Hoja)
 				foreach (var Columna in Encabezado)
 				{
@@ -600,15 +696,15 @@ namespace Scanner
 								Elementos.Add(Convert.ToString(item));
 							
 							int posicion = Columna.getNumColumna();
-							
 							TablaDeTransiciones[fila, posicion].setElementos(Elementos);
+							
 							bool añadir = true;
-						
 							foreach (var item in Transiciones)
 							{
 								if (TablaDeTransiciones[fila, Columna.getNumColumna()].getElementos() == item.getElementos())
 									añadir = false;
 							}
+							
 							if (añadir)
 							{
 								bool letraExistente = false;
@@ -643,39 +739,37 @@ namespace Scanner
 									letra++;
 									Transiciones.Add(TablaDeTransiciones[fila, Columna.getNumColumna()]);
 									Pendientes.Enqueue(TablaDeTransiciones[fila, Columna.getNumColumna()]);
+									
+									if (Pendientes.Count != 0 && analizar == false)
+										analizar = true;
 								}
 							}
 						}
 					}
 				}
-				fila++;
-				temp = Pendientes.Dequeue();
-				FirstPadre = temp.getElementos();
 				
-				TablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());
-				TablaDeTransiciones[fila, 0].setElementos(temp.getElementos());
-				
-				string identificador = temp.getIdentificador();
-				
-				if (añadido == false)
+				try
 				{
-					if (Pendientes.Count == 0)
-					{
-						Transicion Adicional = new Transicion();
-						Pendientes.Enqueue(Adicional);
-						añadido = true;
-					}
+					fila++;
+					temp = Pendientes.Dequeue();
+					FirstPadre = temp.getElementos();
+					
+					TablaDeTransiciones[fila, 0].setIdentificador(temp.getIdentificador());
+					TablaDeTransiciones[fila, 0].setElementos(temp.getElementos());
+					
+					string identificador = temp.getIdentificador();
+					
 				}
-			} while (Pendientes.Count != 0);
+				catch (Exception e) { }
+			
+			// Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion
+			if (Pendientes.Count == 0)
+			UltimaIteracion = true;
+			
+			} while (analizar);
 			
 			// Cual es el simbolo terminal
-			int simboloTerminal = Leafs.Count;
-			
-			for (int i = 0; i < filas - 1; i++)
-			{
-				if (TablaDeTransiciones[i, 0].getElementos().Contains(Convert.ToString(simboloTerminal)))
-					EstadosAceptacion.Add(i);
-			}
+			simboloTerminal = Leafs.Count;
 			
 			return TablaDeTransiciones;
 		}
@@ -694,6 +788,20 @@ namespace Scanner
 			for (int i = 0; i < Encabezado.Length; i++)
 			{
 				Encabezado[i] = new Columna();
+				if (nombres[i] == "α")
+					Encabezado[i].setNombre("(");
+				else if (nombres[i] == "β")
+					Encabezado[i].setNombre(")");
+				else if (nombres[i] == "ɣ")
+					Encabezado[i].setNombre(".");
+				else if (nombres[i] == "δ")
+					Encabezado[i].setNombre("*");
+				else if (nombres[i] == "ε")
+					Encabezado[i].setNombre("+");
+				else if (nombres[i] == "ϑ")
+					Encabezado[i].setNombre("?");
+				else
+					Encabezado[i].setNombre(nombres[i]);
 				Encabezado[i].setNombre(nombres[i]);
 				Encabezado[i].setNumColumna(i + 1);
 				
@@ -738,10 +846,15 @@ namespace Scanner
 			Transiciones.Add(temp);
 			letra++;
 			
-			bool añadido = false;
+			bool analizar = true;
+			bool UltimaIteracion = false;
 			
 			do
 			{
+				// Gatillo para ya no seguir analizando (Solo la ultima iteracion <<Actual>>)
+				if (UltimaIteracion == true)
+					analizar = false;
+				
 				// Por cada Columna (Hoja)
 				foreach (var Columna in Encabezado)
 				{
@@ -803,36 +916,38 @@ namespace Scanner
 									letra++;
 									Transiciones.Add(Linea[Columna.getNumColumna()]);
 									Pendientes.Enqueue(Linea[Columna.getNumColumna()]);
+									
+									if (Pendientes.Count != 0 && analizar == false)
+										analizar = true;
 								}
 							}
 						}
 					}
 				}
 				
-				cant++;
-				temp = Pendientes.Dequeue();
-				FirstPadre = temp.getElementos();
-				string identificador = temp.getIdentificador();
-				
-				Linea = new Transicion[Encabezado.Length + 1];
-				
-				// Inicializacion de la lista
-				for (int i = 0; i < Linea.Length; i++)
-					Linea[i] = new Transicion();
-				
-				Linea[0].setElementos(FirstPadre);
-				Linea[0].setIdentificador(identificador);
-				
-				if (añadido == false)
+				try
 				{
-					if (Pendientes.Count == 0)
-					{
-						Transicion Adicional = new Transicion();
-						Pendientes.Enqueue(Adicional);
-						añadido = true;
-					}
+					cant++;
+					temp = Pendientes.Dequeue();
+					FirstPadre = temp.getElementos();
+					string identificador = temp.getIdentificador();
+					
+					Linea = new Transicion[Encabezado.Length + 1];
+					
+					// Inicializacion de la lista
+					for (int i = 0; i < Linea.Length; i++)
+						Linea[i] = new Transicion();
+					
+					Linea[0].setElementos(FirstPadre);
+					Linea[0].setIdentificador(identificador);
+				
 				}
-			} while (Pendientes.Count != 0);
+				catch (Exception e) { }
+				
+				// Cuando ya no hayan elementos en la cola se activa el trigger UltimaIteracion
+				if (Pendientes.Count == 0)
+					UltimaIteracion = true; 
+			} while (analizar);
 			
 			return cant;
 		}

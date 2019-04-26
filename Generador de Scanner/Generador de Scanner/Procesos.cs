@@ -615,9 +615,10 @@ namespace Generador_de_Scanner
                     linea++;
 
                 if (FiltrarEspacio(txt[linea]).ToUpper() == "ACTIONS")
-                    break; 
+                    break;
 
-                token = FiltrarTabs(txt[linea]);
+                //token = FiltrarTabs();
+                token = txt[linea].Trim();
                 string[] fragmentos = token.Split('=');
 
                 string lineaToken = "";
@@ -672,13 +673,41 @@ namespace Generador_de_Scanner
                         return false;
                 }
 
+                bool abierto = false;
+                string lineToken = "";
+                char[] carateres = lineaToken.ToCharArray();
+
+                foreach (var item in carateres)
+                {
+                    if (item == '\'')
+                    {
+                        abierto = !abierto;
+                        lineToken += Convert.ToString(item);
+                    }
+                    else if (item == '(' && abierto)
+                        lineToken += "α";
+                    else if (item == ')' && abierto)
+                        lineToken += "β";
+                    else if (item == '.' && abierto)
+                        lineToken += "ɣ";
+                    else if (item == '*' && abierto)
+                        lineToken += "δ";
+                    else if (item == '+' && abierto)
+                        lineToken += "ε";
+                    else if (item == '?' && abierto)
+                        lineToken += "ϑ";
+                    else
+                        lineToken += Convert.ToString(item);
+                }
+
                 bool AgragarParentesis = false;
-                char[] caracteres = OrdenarExpresionRegular(lineaToken).ToCharArray();
+                char[] caracteres = OrdenarExpresionRegular(lineToken).ToCharArray();
 
                 if (caracteres[0] == '(' && caracteres[caracteres.Length - 1] == ')')
                 {
                     for (int i = 1; i < caracteres.Length - 1; i++)
                     {
+
                         if (caracteres[i] == ')')
                         {
                             AgragarParentesis = true;
@@ -693,9 +722,9 @@ namespace Generador_de_Scanner
                 
 
                 if (AgragarParentesis)
-                    TokenTemp.setElementos("(" + OrdenarExpresionRegular(lineaToken) + ")");
+                    TokenTemp.setElementos("(" + OrdenarExpresionRegular(lineToken) + ")");
                 else
-                    TokenTemp.setElementos(OrdenarExpresionRegular(lineaToken));
+                    TokenTemp.setElementos(OrdenarExpresionRegular(lineToken));
 
                 foreach (var tokens in Tokens)
                 {
@@ -1249,13 +1278,47 @@ namespace Generador_de_Scanner
                         {
                             try
                             {
-                                // Agrega un elemento hasta que encuentre la comilla simple que cierra
-                                while (letras[cont] != '\'')
+                                // Reemplaza las palabras reservadas por letras griegas
+                                if ((letras[cont] == '(' && letras[cont + 1] == '\''))
                                 {
-                                    palabra += Convert.ToString(letras[cont]);
+                                    palabra += Convert.ToString('α');
+                                    cont = cont + 2;
+                                }
+                                else if ((letras[cont] == ')' && letras[cont + 1] == '\''))
+                                {
+                                    palabra += Convert.ToString('β');
+                                    cont = cont + 2;
+                                }
+                                else if ((letras[cont] == '.' && letras[cont + 1] == '\''))
+                                {
+                                    palabra += Convert.ToString('ɣ');
+                                    cont = cont + 2;
+                                }
+                                else if ((letras[cont] == '*' && letras[cont + 1] == '\''))
+                                {
+                                    palabra += Convert.ToString('δ');
+                                    cont = cont + 2;
+                                }
+                                else if ((letras[cont] == '+' && letras[cont + 1] == '\''))
+                                {
+                                    palabra += Convert.ToString('ε');
+                                    cont = cont + 2;
+                                }
+                                else if ((letras[cont] == '?' && letras[cont + 1] == '\''))
+                                {
+                                    palabra += Convert.ToString('ϑ');
+                                    cont = cont + 2;
+                                }
+                                else
+                                {
+                                    // Agrega un elemento hasta que encuentre la comilla simple que cierra
+                                    while (letras[cont] != '\'')
+                                    {
+                                        palabra += Convert.ToString(letras[cont]);
+                                        cont++;
+                                    }
                                     cont++;
                                 }
-                                cont++;
 
                                 palabras.Add(palabra);
                                 palabra = "";
@@ -1265,6 +1328,7 @@ namespace Generador_de_Scanner
 
                                 if (ValidarOperador(letras, ref cont, ref error) == false)
                                     return false;
+
                             }
                             catch
                             {
@@ -1355,8 +1419,15 @@ namespace Generador_de_Scanner
 
                 if (encontrada == false)
                 {
-                    error = "No se ha encontrado \"" + lenguaje + "\" definido en los SETS";
-                    return false;
+                    if (lenguaje == "α" || lenguaje == "β" || lenguaje == "ɣ" || lenguaje == "δ" || lenguaje == "ε" || lenguaje == "ϑ")
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        error = "No se ha encontrado \"" + lenguaje + "\" definido en los SETS";
+                        return false;
+                    }
                 }
                     
             }
@@ -1384,8 +1455,16 @@ namespace Generador_de_Scanner
 
                 if (encontrada == false)
                 {
-                    error = "No se ha encontrado \"" + palabra + "\" definido en los SETS";
-                    return false;
+                    if (palabra == "α" || palabra == "β" || palabra == "ɣ" || palabra == "δ" || palabra == "ε" || palabra == "ϑ")
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        error = "No se ha encontrado \"" + palabra + "\" definido en los SETS";
+                        return false;
+                    }
+
                 }
             }
 
