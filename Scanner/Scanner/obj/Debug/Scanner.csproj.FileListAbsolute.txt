@@ -1,7 +1,0 @@
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\bin\Debug\Scanner.exe.config
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\bin\Debug\Scanner.exe
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\bin\Debug\Scanner.pdb
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\obj\Debug\Scanner.csprojResolveAssemblyReference.cache
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\obj\Debug\Scanner.csproj.CoreCompileInputs.cache
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\obj\Debug\Scanner.exe
-C:\Users\Admin\Documents\GitHub\Generador-de-Scanner\Scanner\Scanner\obj\Debug\Scanner.pdb

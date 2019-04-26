@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using Microsoft.CSharp;
+using System.CodeDom.Compiler;
 
 namespace Generador_de_Scanner
 {
@@ -98,12 +100,13 @@ namespace Generador_de_Scanner
 
         }
 
-        
+
         // ESCRITURA DEL ARCHIVO .CS "SCANNER"
 
         private void EscribirScanner()
         {
-            StreamWriter sw = new StreamWriter("C:\\Users\\Admin\\Documents\\GitHub\\Generador-de-Scanner\\Scanner\\Scanner\\Program.cs");
+            // "C:\\Users\\Admin\\Documents\\GitHub\\Generador-de-Scanner\\Scanner\\Scanner\\Program.cs"
+            StreamWriter sw = new StreamWriter("C:\\Users\\Admin\\Desktop\\Program.cs");
 
             sw.WriteLine("using System;");
             sw.WriteLine("using System.Collections.Generic;");
@@ -133,12 +136,27 @@ namespace Generador_de_Scanner
             EscribirGenerarAutomataToken(ref sw);
 
             sw.WriteLine("\t}");
+            sw.WriteLine("\t");
+
+            EscribirClases(ref sw);
+
+            sw.WriteLine("");
             sw.WriteLine("}");
             sw.WriteLine("");
 
             sw.Close();
 
-            
+            var programPath = "C:\\Users\\Admin\\Desktop\\Scanner.exe"; //RUTA Y NOMBRE DE DONDE SE GENERARÁ EL .EXE"
+            var csc = new CSharpCodeProvider();
+            var parameters = new CompilerParameters(new[] { "mscorlib.dll", "System.Core.dll", "System.Data.dll", "System.dll", "System.Collections.dll"}, programPath, true); parameters.GenerateExecutable = true;
+            parameters.GenerateExecutable = true;
+
+            //RUTA DEL CODIGO QUE SE VA A COMPILAR"
+            var code = File.ReadAllText("C:\\Users\\Admin\\Desktop\\Program.cs");
+            CompilerResults result = csc.CompileAssemblyFromSource(parameters, code);
+
+            FolderBrowserDialog folder = new FolderBrowserDialog();
+            System.Diagnostics.Process.Start(@"C:\\Users\\Admin\\Desktop\\Scanner.exe");
 
         }
 
@@ -809,6 +827,12 @@ namespace Generador_de_Scanner
             sw.WriteLine("\t\t");
 
 
+        }
+
+        private void EscribirClases(ref StreamWriter sw)
+        {
+            StreamReader sr = new StreamReader("C:\\Users\\Admin\\Documents\\GitHub\\Generador-de-Scanner\\Generador de Scanner\\Clases.txt");
+            sw.Write(sr.ReadToEnd());
         }
 
         // OPERACION DEL ARCHIVO PARA EL DESARROLLO DEL AUTOMATA
